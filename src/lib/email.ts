@@ -136,7 +136,7 @@ export async function sendDailyDigest(
   const dateDisplay = formatHebrewDate(data.date);
 
   const { error } = await resend.emails.send({
-    from: "עוטף הורים <noreply@updates.otef-parents.co.il>",
+    from: "עוטף הורים <donotreplay@loz.com>",
     to,
     subject: `📋 סיכום יומי – ${dateDisplay}`,
     html,
