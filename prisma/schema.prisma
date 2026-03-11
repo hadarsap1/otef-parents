@@ -1,0 +1,273 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ── NextAuth models ──────────────────────────────────────────
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ── App models ───────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  role          Role      @default(PARENT)
+  createdAt     DateTime  @default(now())
+  digestEnabled Boolean   @default(true)
+  digestTime    String    @default("08:00") // "HH:mm" in Israel time
+
+  accounts              Account[]
+  sessions              Session[]
+  children              Child[]
+  hostedPlaydates       Playdate[]
+  childParents          ChildParent[]
+  createdInvites        ChildInvite[] @relation("InviteCreator")
+  redeemedInvites       ChildInvite[] @relation("InviteRedeemer")
+  ownedGroups           Group[]
+  createdGroupInvites   GroupInvite[] @relation("GroupInviteCreator")
+  redeemedGroupInvites  GroupInvite[] @relation("GroupInviteRedeemer")
+  lessons               Lesson[]
+  personalEvents        PersonalEvent[]
+}
+
+enum Role {
+  PARENT
+  TEACHER
+  ADMIN
+}
+
+model Child {
+  id        String   @id @default(cuid())
+  name      String
+  grade     String?
+  className String?
+  parentId  String
+  createdAt DateTime @default(now())
+
+  parent                User                   @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  scheduleItems         ScheduleItem[]
+  playdateParticipants  PlaydateParticipant[]
+  childParents          ChildParent[]
+  invites               ChildInvite[]
+  groupMemberships      GroupMember[]
+  lessonRegistrations   LessonRegistration[]
+}
+
+// ── Personal events (parent-created) ─────────────────────────
+model PersonalEvent {
+  id        String   @id @default(cuid())
+  title     String
+  date      DateTime // date of the event
+  startTime String?  // "HH:mm" optional
+  endTime   String?  // "HH:mm" optional
+  notes     String?
+  emoji     String?  // optional emoji icon
+  userId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ── Co-parenting models ───────────────────────────────────
+
+enum ChildParentRole {
+  OWNER
+  LINKED
+}
+
+// Join table linking children to co-parents
+model ChildParent {
+  id        String          @id @default(cuid())
+  childId   String
+  userId    String
+  role      ChildParentRole @default(LINKED)
+  createdAt DateTime        @default(now())
+
+  child Child @relation(fields: [childId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([childId, userId])
+}
+
+// Invite codes for linking a co-parent to a child
+model ChildInvite {
+  id              String    @id @default(cuid())
+  code            String    @unique @db.Char(6)
+  childId         String
+  createdByUserId String
+  expiresAt       DateTime
+  usedAt          DateTime?
+  usedByUserId    String?
+  createdAt       DateTime  @default(now())
+
+  child       Child  @relation(fields: [childId], references: [id], onDelete: Cascade)
+  createdBy   User   @relation("InviteCreator", fields: [createdByUserId], references: [id], onDelete: Cascade)
+  usedBy      User?  @relation("InviteRedeemer", fields: [usedByUserId], references: [id], onDelete: SetNull)
+}
+
+model ScheduleItem {
+  id        String   @id @default(cuid())
+  subject   String
+  startTime DateTime
+  endTime   DateTime
+  zoomUrl   String?
+  notes     String?
+  childId   String
+  groupId   String?
+  createdAt DateTime @default(now())
+
+  child Child  @relation(fields: [childId], references: [id], onDelete: Cascade)
+  group Group? @relation(fields: [groupId], references: [id], onDelete: SetNull)
+}
+
+model Playdate {
+  id          String         @id @default(cuid())
+  hostId      String
+  groupId     String
+  address     String
+  dateTime    DateTime
+  endTime     String?        // "HH:mm" optional
+  maxCapacity Int
+  status      PlaydateStatus @default(OPEN)
+  notes       String?
+  createdAt   DateTime       @default(now())
+
+  host         User                  @relation(fields: [hostId], references: [id], onDelete: Cascade)
+  group        Group                 @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  participants PlaydateParticipant[]
+}
+
+enum PlaydateStatus {
+  OPEN
+  FULL
+  CANCELLED
+}
+
+model PlaydateParticipant {
+  id         String   @id @default(cuid())
+  childId    String
+  playdateId String
+  joinedAt   DateTime @default(now())
+
+  child    Child    @relation(fields: [childId], references: [id], onDelete: Cascade)
+  playdate Playdate @relation(fields: [playdateId], references: [id], onDelete: Cascade)
+
+  @@unique([childId, playdateId])
+}
+
+// ── Group / Class models (Teacher integration) ──────────────
+
+model Group {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  teacherId   String
+  createdAt   DateTime @default(now())
+
+  teacher       User            @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  members       GroupMember[]
+  invites       GroupInvite[]
+  scheduleItems ScheduleItem[]
+  lessons       Lesson[]
+  playdates     Playdate[]
+}
+
+model GroupMember {
+  id        String   @id @default(cuid())
+  groupId   String
+  childId   String
+  joinedAt  DateTime @default(now())
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  child Child @relation(fields: [childId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, childId])
+}
+
+model GroupInvite {
+  id              String    @id @default(cuid())
+  code            String    @unique @db.Char(6)
+  groupId         String
+  createdByUserId String
+  expiresAt       DateTime
+  usedAt          DateTime?
+  usedByUserId    String?
+  createdAt       DateTime  @default(now())
+
+  group     Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  createdBy User  @relation("GroupInviteCreator", fields: [createdByUserId], references: [id], onDelete: Cascade)
+  usedBy    User? @relation("GroupInviteRedeemer", fields: [usedByUserId], references: [id], onDelete: SetNull)
+}
+
+// ── Lesson scheduling (Teacher → Parent registration) ────────
+
+model Lesson {
+  id        String @id @default(cuid())
+  title     String
+  day       Int    // 0=Sun, 1=Mon … 6=Sat
+  startTime String // "HH:mm"
+  endTime   String // "HH:mm"
+  maxKids   Int
+  zoomLink  String?
+  teacherId String
+  groupId   String?
+  createdAt DateTime @default(now())
+
+  teacher       User                @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  group         Group?              @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  registrations LessonRegistration[]
+}
+
+model LessonRegistration {
+  id        String   @id @default(cuid())
+  lessonId  String
+  childId   String
+  createdAt DateTime @default(now())
+
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  child  Child  @relation(fields: [childId], references: [id], onDelete: Cascade)
+
+  @@unique([lessonId, childId])
+}
