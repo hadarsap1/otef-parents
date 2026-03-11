@@ -32,11 +32,16 @@ export async function GET() {
     return NextResponse.json([]);
   }
 
+  // Use start of today (in UTC) so playdates for today always appear,
+  // even if their time has already passed
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
   const playdates = await prisma.playdate.findMany({
     where: {
       groupId: { in: groupIds },
       status: { in: ["OPEN", "FULL"] },
-      dateTime: { gte: new Date() },
+      dateTime: { gte: today },
     },
     include: {
       host: { select: { id: true, name: true, image: true } },

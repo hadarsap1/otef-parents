@@ -41,15 +41,42 @@ function WheelColumn({
     const el = containerRef.current;
     if (!el || isScrolling.current) return;
     const target = selectedIndex * ITEM_HEIGHT;
-    el.scrollTo({ top: target, behavior: "smooth" });
+    // Use instant scroll on first render so items are positioned correctly,
+    // then smooth for subsequent changes
+    const isInitial = el.scrollTop === 0 && selectedIndex === 0;
+    if (isInitial) {
+      // Force a layout recalc then set position
+      el.scrollTop = 0;
+    } else {
+      el.scrollTo({ top: target, behavior: "smooth" });
+    }
   }, [selectedIndex]);
+
+  // Ensure correct position after mount (handles cases where layout isn't ready)
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const timer = setTimeout(() => {
+      if (!isScrolling.current) {
+        el.scrollTo({ top: selectedIndex * ITEM_HEIGHT, behavior: "instant" as ScrollBehavior });
+      }
+    }, 50);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const snapToNearest = useCallback(() => {
     const el = containerRef.current;
     if (!el) return;
-    const index = Math.round(el.scrollTop / ITEM_HEIGHT);
+    // Use floor + 0.5 rounding to ensure index 0 is reachable even with small scrollTop values
+    const rawIndex = el.scrollTop / ITEM_HEIGHT;
+    const index = Math.round(rawIndex);
     const clamped = Math.max(0, Math.min(index, items.length - 1));
-    el.scrollTo({ top: clamped * ITEM_HEIGHT, behavior: "smooth" });
+    const targetTop = clamped * ITEM_HEIGHT;
+    // Only scroll if not already at the target (avoids infinite scroll events)
+    if (Math.abs(el.scrollTop - targetTop) > 1) {
+      el.scrollTo({ top: targetTop, behavior: "smooth" });
+    }
     if (items[clamped] !== selected) {
       onSelect(items[clamped]);
     }
