@@ -109,7 +109,7 @@ export function HelpContent({
           בעמוד <strong>שיעורים</strong> מוצג לוח השיעורים השבועי של הקבוצות.
         </p>
         <Step num={1} text="ראו את רשימת השיעורים לפי ימים." />
-        <Step num={2} text='לחצו "הרשמה" כדי לרשום ילד/ה לשיעור.' />
+        <Step num={2} text="השיעורים מופיעים אוטומטית לפי הקבוצות שלכם." />
         <Step num={3} text="קישור לזום (אם קיים) יופיע ליד השיעור." />
         <div className="space-y-1">
           <p className="font-medium text-foreground">הוספת שיעורים ידנית:</p>

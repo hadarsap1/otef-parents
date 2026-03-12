@@ -234,10 +234,10 @@ const parentSlides: Slide[] = [
     icon: Clock,
     iconBg: "bg-sky-100 text-sky-600",
     title: "שיעורים",
-    subtitle: "לוח שיעורים שבועי עם הרשמה",
+    subtitle: "לוח שיעורים שבועי לפי קבוצה",
     bullets: [
       { text: "ראו את כל השיעורים לפי ימים בשבוע" },
-      { icon: BookOpen, text: "לחצו ״הרשמה״ לרשום ילד/ה לשיעור" },
+      { text: "השיעורים מופיעים אוטומטית לפי הקבוצות שלכם" },
       { icon: Video, text: "קישור זום יופיע ליד שיעורים אונליין" },
       { icon: Calendar, text: "הוסיפו שיעור ליומן Google בלחיצה" },
     ],
@@ -253,7 +253,7 @@ const parentSlides: Slide[] = [
             </div>
             <div className="flex justify-between mt-1">
               <span className="text-[8px] flex items-center gap-0.5"><Video className="h-2 w-2" /> זום</span>
-              <span className="text-primary font-bold text-[8px]">הרשמה</span>
+              <span className="text-[8px] flex items-center gap-0.5"><Calendar className="h-2 w-2" /> ליומן</span>
             </div>
           </MiniCard>
           <MiniCard highlight>
@@ -262,7 +262,7 @@ const parentSlides: Slide[] = [
               <span className="text-[9px]">10:00–10:45</span>
             </div>
             <div className="flex justify-between mt-1">
-              <span className="text-[8px] text-green-600">✓ רשום</span>
+              <span className="text-[8px] text-muted-foreground">כיתה א׳</span>
               <span className="text-[8px] flex items-center gap-0.5"><Calendar className="h-2 w-2" /> ליומן</span>
             </div>
           </MiniCard>
@@ -437,7 +437,7 @@ const teacherSlides: Slide[] = [
       { icon: Plus, text: "לחצו ״שיעור חדש״" },
       { text: "בחרו קבוצה, נושא, יום, שעה" },
       { icon: Video, text: "הוסיפו קישור זום (אופציונלי)" },
-      { text: "ההורים יראו את השיעורים ויוכלו להירשם" },
+      { text: "השיעורים יופיעו אוטומטית להורים בקבוצה" },
     ],
     visual: (
       <PhoneMock>
@@ -463,35 +463,6 @@ const teacherSlides: Slide[] = [
             </div>
           </div>
           <div className="text-center text-[9px] bg-primary text-white rounded py-1.5 font-medium">שמירה</div>
-        </div>
-      </PhoneMock>
-    ),
-  },
-  {
-    icon: Users,
-    iconBg: "bg-violet-100 text-violet-600",
-    title: "מעקב נרשמים",
-    subtitle: "ראו מי נרשם לכל שיעור",
-    bullets: [
-      { text: "ליד כל שיעור מוצג מספר הנרשמים" },
-      { text: "לחצו על שיעור לצפייה ברשימה מלאה" },
-      { text: "ערכו או מחקו שיעורים בכל עת" },
-    ],
-    visual: (
-      <PhoneMock>
-        <div className="space-y-1.5">
-          <div className="font-bold text-foreground text-xs">מתמטיקה · ראשון 09:00</div>
-          <div className="text-[9px] text-muted-foreground">5 נרשמים</div>
-          <div className="space-y-1">
-            {["נועה כהן", "יובל לוי", "מאיה ברק", "אורי דוד", "שירה גל"].map((name) => (
-              <div key={name} className="flex items-center gap-1.5 py-0.5 border-b border-dashed border-border/40 last:border-0">
-                <div className="h-4 w-4 rounded-full bg-primary/10 flex items-center justify-center text-[7px] font-bold text-primary">
-                  {name[0]}
-                </div>
-                <span className="text-[10px] text-foreground">{name}</span>
-              </div>
-            ))}
-          </div>
         </div>
       </PhoneMock>
     ),
