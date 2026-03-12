@@ -88,6 +88,10 @@ export function AdminPanel() {
 
   // Schools state
   const [schools, setSchools] = useState<{ id: string; name: string; slug: string; _count: { groups: number; members: number } }[]>([]);
+  const [editingSchool, setEditingSchool] = useState<string | null>(null);
+  const [editSchoolName, setEditSchoolName] = useState("");
+  const [deleteSchoolDialog, setDeleteSchoolDialog] = useState<{ id: string; name: string } | null>(null);
+  const [deletingSchool, setDeletingSchool] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -190,6 +194,33 @@ export function AdminPanel() {
     setRemovingMember(null);
   }
 
+  async function saveSchoolName(schoolId: string) {
+    if (!editSchoolName.trim()) return;
+    const res = await fetch(`/api/schools/${schoolId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name: editSchoolName.trim() }),
+    });
+    if (res.ok) {
+      setSchools((prev) =>
+        prev.map((s) =>
+          s.id === schoolId ? { ...s, name: editSchoolName.trim() } : s
+        )
+      );
+    }
+    setEditingSchool(null);
+  }
+
+  async function handleDeleteSchool(schoolId: string) {
+    setDeletingSchool(true);
+    const res = await fetch(`/api/schools/${schoolId}`, { method: "DELETE" });
+    if (res.ok) {
+      setSchools((prev) => prev.filter((s) => s.id !== schoolId));
+    }
+    setDeletingSchool(false);
+    setDeleteSchoolDialog(null);
+  }
+
   if (loading) return <LoadingState />;
 
   return (
@@ -239,14 +270,54 @@ export function AdminPanel() {
             <Card key={school.id}>
               <CardHeader className="pb-2 pt-3 px-4">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-base">
-                    <a href={`/school/${school.slug}`} className="hover:underline">
-                      {school.name}
-                    </a>
-                  </CardTitle>
-                  <span className="text-xs text-muted-foreground">
-                    {school._count.groups} קבוצות · {school._count.members} מורים
-                  </span>
+                  {editingSchool === school.id ? (
+                    <div className="flex items-center gap-2 flex-1">
+                      <Input
+                        value={editSchoolName}
+                        onChange={(e) => setEditSchoolName(e.target.value)}
+                        className="h-8 text-sm"
+                        autoFocus
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") saveSchoolName(school.id);
+                          if (e.key === "Escape") setEditingSchool(null);
+                        }}
+                      />
+                      <Button size="sm" className="h-8" onClick={() => saveSchoolName(school.id)}>
+                        שמירה
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <CardTitle className="text-base">
+                        <a href={`/school/${school.slug}`} className="hover:underline">
+                          {school.name}
+                        </a>
+                      </CardTitle>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        onClick={() => {
+                          setEditingSchool(school.id);
+                          setEditSchoolName(school.name);
+                        }}
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span className="text-xs text-muted-foreground">
+                      {school._count.groups} קבוצות · {school._count.members} מורים
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      className="hover:bg-destructive/10"
+                      onClick={() => setDeleteSchoolDialog({ id: school.id, name: school.name })}
+                    >
+                      <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
             </Card>
@@ -517,6 +588,43 @@ export function AdminPanel() {
                 : confirmDialog?.type === "delete"
                   ? "מחיקה לצמיתות"
                   : "איפוס נתונים"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* School Delete Dialog */}
+      <Dialog
+        open={!!deleteSchoolDialog}
+        onOpenChange={(open) => !open && setDeleteSchoolDialog(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>מחיקת בית ספר</DialogTitle>
+            <DialogDescription>
+              האם למחוק את <strong>{deleteSchoolDialog?.name}</strong> לצמיתות?
+              כל הקבוצות, החברים והנתונים של בית הספר יימחקו ולא ניתן יהיה לשחזר אותם.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              className="rounded-xl"
+              onClick={() => setDeleteSchoolDialog(null)}
+            >
+              ביטול
+            </Button>
+            <Button
+              variant="destructive"
+              className="rounded-xl"
+              disabled={deletingSchool}
+              onClick={() => {
+                if (deleteSchoolDialog) {
+                  handleDeleteSchool(deleteSchoolDialog.id);
+                }
+              }}
+            >
+              {deletingSchool ? "מוחק..." : "מחיקה לצמיתות"}
             </Button>
           </DialogFooter>
         </DialogContent>
