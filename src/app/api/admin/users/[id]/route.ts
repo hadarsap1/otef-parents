@@ -47,7 +47,7 @@ export async function POST(
 
   // Delete all user-related data in a transaction
   await prisma.$transaction([
-    // Children (cascades to: ScheduleItem, PlaydateParticipant, ChildParent, ChildInvite, GroupMember, LessonRegistration)
+    // Children (cascades to: ScheduleItem, PlaydateParticipant, ChildParent, ChildInvite, GroupMember)
     prisma.child.deleteMany({ where: { parentId: id } }),
     // Hosted playdates (cascades to PlaydateParticipant)
     prisma.playdate.deleteMany({ where: { hostId: id } }),
@@ -59,7 +59,7 @@ export async function POST(
     prisma.group.deleteMany({ where: { teacherId: id } }),
     // Group invites created by user
     prisma.groupInvite.deleteMany({ where: { createdByUserId: id } }),
-    // Lessons (cascades to LessonRegistration)
+    // Lessons
     prisma.lesson.deleteMany({ where: { teacherId: id } }),
     // Personal events
     prisma.personalEvent.deleteMany({ where: { userId: id } }),

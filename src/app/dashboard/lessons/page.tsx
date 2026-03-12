@@ -12,41 +12,34 @@ export default async function LessonsPage() {
     redirect("/login");
   }
 
-  const [lessons, children] = await Promise.all([
-    prisma.lesson.findMany({
-      include: {
-        teacher: { select: { name: true } },
-        group: { select: { id: true, name: true } },
-        _count: { select: { registrations: true } },
-        registrations: {
-          where: {
-            child: {
-              OR: [
-                { parentId: session.user.id },
-                { childParents: { some: { userId: session.user.id } } },
-              ],
-            },
-          },
-          select: { childId: true },
-        },
-      },
-      orderBy: [{ day: "asc" }, { startTime: "asc" }],
-    }),
-    prisma.child.findMany({
-      where: {
-        OR: [
-          { parentId: session.user.id },
-          { childParents: { some: { userId: session.user.id } } },
-        ],
-      },
-      select: { id: true, name: true },
-    }),
-  ]);
+  // Find lessons via children's group memberships
+  const children = await prisma.child.findMany({
+    where: {
+      OR: [
+        { parentId: session.user.id },
+        { childParents: { some: { userId: session.user.id } } },
+      ],
+    },
+    select: { id: true, groupMemberships: { select: { groupId: true } } },
+  });
+
+  const groupIds = [
+    ...new Set(children.flatMap((c) => c.groupMemberships.map((m) => m.groupId))),
+  ];
+
+  const lessons = await prisma.lesson.findMany({
+    where: { groupId: { in: groupIds } },
+    include: {
+      teacher: { select: { name: true } },
+      group: { select: { id: true, name: true } },
+    },
+    orderBy: [{ day: "asc" }, { startTime: "asc" }],
+  });
 
   return (
     <div className="space-y-4">
       <LessonsPageHeader />
-      <ParentLessons initialLessons={lessons} children={children} />
+      <ParentLessons initialLessons={lessons} />
     </div>
   );
 }

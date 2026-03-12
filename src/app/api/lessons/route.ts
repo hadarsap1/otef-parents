@@ -3,7 +3,9 @@ import { getServerSession } from "next-auth";
 import { authOptions, requireRole, teacherFilter } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-// GET /api/lessons — list lessons (parents see all, teachers see own)
+// GET /api/lessons — list lessons
+// Parents: lessons for groups their children belong to
+// Teachers: own lessons
 export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session?.user) {
@@ -13,25 +15,44 @@ export async function GET() {
   const isTeacher =
     session.user.role === "TEACHER" || session.user.role === "SUPERADMIN";
 
+  if (isTeacher) {
+    const lessons = await prisma.lesson.findMany({
+      where: teacherFilter(session),
+      include: {
+        teacher: { select: { name: true } },
+        group: {
+          select: {
+            id: true,
+            name: true,
+            members: { select: { child: { select: { id: true, name: true } } } },
+          },
+        },
+      },
+      orderBy: [{ day: "asc" }, { startTime: "asc" }],
+    });
+    return NextResponse.json(lessons);
+  }
+
+  // Parent: find lessons for groups their children belong to
+  const children = await prisma.child.findMany({
+    where: {
+      OR: [
+        { parentId: session.user.id },
+        { childParents: { some: { userId: session.user.id } } },
+      ],
+    },
+    select: { id: true, groupMemberships: { select: { groupId: true } } },
+  });
+
+  const groupIds = [
+    ...new Set(children.flatMap((c) => c.groupMemberships.map((m) => m.groupId))),
+  ];
+
   const lessons = await prisma.lesson.findMany({
-    where: isTeacher ? teacherFilter(session) : {},
+    where: { groupId: { in: groupIds } },
     include: {
       teacher: { select: { name: true } },
       group: { select: { id: true, name: true } },
-      _count: { select: { registrations: true } },
-      registrations: isTeacher
-        ? { include: { child: { select: { id: true, name: true } } } }
-        : {
-            where: {
-              child: {
-                OR: [
-                  { parentId: session.user.id },
-                  { childParents: { some: { userId: session.user.id } } },
-                ],
-              },
-            },
-            select: { childId: true },
-          },
     },
     orderBy: [{ day: "asc" }, { startTime: "asc" }],
   });
@@ -39,23 +60,17 @@ export async function GET() {
   return NextResponse.json(lessons);
 }
 
-// POST /api/lessons — teacher creates a lesson slot
+// POST /api/lessons — teacher creates a lesson (groupId required)
 export async function POST(req: NextRequest) {
   const { error, session } = await requireRole("TEACHER", "SUPERADMIN");
   if (error) return error;
 
-  const { title, day, startTime, endTime, maxKids, groupId, zoomLink } =
+  const { title, day, startTime, endTime, groupId, zoomLink } =
     await req.json();
 
-  if (
-    !title?.trim() ||
-    day == null ||
-    !startTime ||
-    !endTime ||
-    !maxKids
-  ) {
+  if (!title?.trim() || day == null || !startTime || !endTime || !groupId) {
     return NextResponse.json(
-      { error: "title, day, startTime, endTime, maxKids are required" },
+      { error: "title, day, startTime, endTime, groupId are required" },
       { status: 400 }
     );
   }
@@ -64,21 +79,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "day must be 0-6" }, { status: 400 });
   }
 
-  if (maxKids < 1 || maxKids > 50) {
-    return NextResponse.json(
-      { error: "maxKids must be 1-50" },
-      { status: 400 }
-    );
-  }
-
-  // If groupId provided, verify teacher owns it (SUPERADMIN sees all)
-  if (groupId) {
-    const group = await prisma.group.findFirst({
-      where: { id: groupId, ...teacherFilter(session) },
-    });
-    if (!group) {
-      return NextResponse.json({ error: "Group not found" }, { status: 404 });
-    }
+  // Verify teacher owns the group (SUPERADMIN sees all)
+  const group = await prisma.group.findFirst({
+    where: { id: groupId, ...teacherFilter(session) },
+  });
+  if (!group) {
+    return NextResponse.json({ error: "Group not found" }, { status: 404 });
   }
 
   const lesson = await prisma.lesson.create({
@@ -87,9 +93,8 @@ export async function POST(req: NextRequest) {
       day,
       startTime,
       endTime,
-      maxKids,
       teacherId: session.user.id,
-      groupId: groupId || null,
+      groupId,
       zoomLink: zoomLink?.trim() || null,
     },
   });

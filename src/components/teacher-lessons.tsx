@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Clock, Users, Trash2, Video, Pencil } from "lucide-react";
+import { Plus, Clock, Trash2, Video, Pencil, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -47,26 +47,23 @@ interface Lesson {
   day: number;
   startTime: string;
   endTime: string;
-  maxKids: number;
   zoomLink: string | null;
-  groupId: string | null;
-  group: { id: string; name: string } | null;
-  _count: { registrations: number };
-  registrations: { child: { id: string; name: string } }[];
+  groupId: string;
+  group: { id: string; name: string; members?: { child: { id: string; name: string } }[] };
 }
 
-/** Group lessons by title+day so we can show them as one block with slots */
-function groupLessons(lessons: Lesson[]) {
+/** Group lessons by groupId */
+function groupByGroup(lessons: Lesson[]) {
   const map = new Map<string, Lesson[]>();
   for (const l of lessons) {
-    const key = `${l.title}::${l.day}`;
-    if (!map.has(key)) map.set(key, []);
-    map.get(key)!.push(l);
+    if (!map.has(l.groupId)) map.set(l.groupId, []);
+    map.get(l.groupId)!.push(l);
   }
-  return Array.from(map.entries()).map(([, slots]) => ({
-    title: slots[0].title,
-    day: slots[0].day,
-    slots: slots.sort((a, b) => a.startTime.localeCompare(b.startTime)),
+  return Array.from(map.entries()).map(([, lessons]) => ({
+    group: lessons[0].group,
+    lessons: lessons.sort(
+      (a, b) => a.day - b.day || a.startTime.localeCompare(b.startTime)
+    ),
   }));
 }
 
@@ -80,99 +77,65 @@ export function TeacherLessons({
   const router = useRouter();
   const [createOpen, setCreateOpen] = useState(false);
   const [editSlot, setEditSlot] = useState<Lesson | null>(null);
-  const [deleteAllSlots, setDeleteAllSlots] = useState<Lesson[] | null>(null);
   const [loading, setLoading] = useState(false);
 
+  // Create form state
   const [title, setTitle] = useState("");
   const [day, setDay] = useState(0);
-  const [numGroups, setNumGroups] = useState(5);
-  const [firstStart, setFirstStart] = useState("13:00");
-  const [slotDuration, setSlotDuration] = useState(30);
-  const [maxKids, setMaxKids] = useState(6);
+  const [startTime, setStartTime] = useState("13:00");
+  const [endTime, setEndTime] = useState("13:30");
+  const [groupId, setGroupId] = useState(groups[0]?.id ?? "");
   const [zoomLink, setZoomLink] = useState("");
 
-  const grouped = groupLessons(initialLessons);
+  // Edit form state
+  const [editTitle, setEditTitle] = useState("");
+  const [editStartTime, setEditStartTime] = useState("");
+  const [editEndTime, setEditEndTime] = useState("");
+  const [editZoomLink, setEditZoomLink] = useState("");
+
+  const grouped = groupByGroup(initialLessons);
 
   async function handleCreate() {
-    if (!title.trim() || numGroups < 1) return;
+    if (!title.trim() || !groupId) return;
     setLoading(true);
     try {
-      // Create multiple slots
-      const [startH, startM] = firstStart.split(":").map(Number);
-      let currentMinutes = startH * 60 + startM;
-
-      for (let i = 0; i < numGroups; i++) {
-        const sh = Math.floor(currentMinutes / 60);
-        const sm = currentMinutes % 60;
-        const endMinutes = currentMinutes + slotDuration;
-        const eh = Math.floor(endMinutes / 60);
-        const em = endMinutes % 60;
-
-        const startTime = `${String(sh).padStart(2, "0")}:${String(sm).padStart(2, "0")}`;
-        const endTime = `${String(eh).padStart(2, "0")}:${String(em).padStart(2, "0")}`;
-
-        await fetch("/api/lessons", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            title,
-            day,
-            startTime,
-            endTime,
-            maxKids,
-            zoomLink: zoomLink.trim() || null,
-          }),
-        });
-
-        currentMinutes = endMinutes;
+      const res = await fetch("/api/lessons", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: title.trim(),
+          day,
+          startTime,
+          endTime,
+          groupId,
+          zoomLink: zoomLink.trim() || null,
+        }),
+      });
+      if (res.ok) {
+        setTitle("");
+        setDay(0);
+        setStartTime("13:00");
+        setEndTime("13:30");
+        setZoomLink("");
+        setCreateOpen(false);
+        router.refresh();
       }
-
-      setTitle("");
-      setDay(0);
-      setNumGroups(5);
-      setFirstStart("13:00");
-      setSlotDuration(30);
-      setMaxKids(6);
-      setZoomLink("");
-      setCreateOpen(false);
-      router.refresh();
     } finally {
       setLoading(false);
     }
   }
 
-  async function handleDeleteSlot(lessonId: string) {
+  async function handleDeleteLesson(lessonId: string) {
     const res = await fetch(`/api/lessons/${lessonId}`, { method: "DELETE" });
     if (res.ok) router.refresh();
   }
 
-  async function handleDeleteAll(slots: Lesson[]) {
-    setLoading(true);
-    try {
-      await Promise.all(
-        slots.map((s) =>
-          fetch(`/api/lessons/${s.id}`, { method: "DELETE" })
-        )
-      );
-      setDeleteAllSlots(null);
-      router.refresh();
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  // Edit state
-  const [editStartTime, setEditStartTime] = useState("");
-  const [editEndTime, setEditEndTime] = useState("");
-  const [editMaxKids, setEditMaxKids] = useState(6);
-  const [editZoomLink, setEditZoomLink] = useState("");
-
-  function openEdit(slot: Lesson) {
-    setEditSlot(slot);
-    setEditStartTime(slot.startTime);
-    setEditEndTime(slot.endTime);
-    setEditMaxKids(slot.maxKids);
-    setEditZoomLink(slot.zoomLink ?? "");
+  function openEdit(lesson: Lesson) {
+    setEditSlot(lesson);
+    setEditTitle(lesson.title);
+    setEditStartTime(lesson.startTime);
+    setEditEndTime(lesson.endTime);
+    setEditZoomLink(lesson.zoomLink ?? "");
   }
 
   async function handleEdit() {
@@ -183,9 +146,9 @@ export function TeacherLessons({
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          title: editTitle.trim(),
           startTime: editStartTime,
           endTime: editEndTime,
-          maxKids: editMaxKids,
           zoomLink: editZoomLink.trim() || null,
         }),
       });
@@ -202,7 +165,7 @@ export function TeacherLessons({
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground font-medium">
-          {grouped.length > 0 ? `${grouped.length} שיעורים` : ""}
+          {initialLessons.length > 0 ? `${initialLessons.length} שיעורים` : ""}
         </p>
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
           <DialogTrigger
@@ -215,13 +178,28 @@ export function TeacherLessons({
           />
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>יצירת שיעור חדש</DialogTitle>
+              <DialogTitle>שיעור חדש</DialogTitle>
               <DialogDescription>
-                הגדירו שם, יום, מספר קבוצות ושעת התחלה. המערכת תיצור את הקבוצות
-                אוטומטית.
+                הוסיפו שיעור לקבוצה. כל הילדים בקבוצה יראו אותו אוטומטית.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="lesson-group">קבוצה</Label>
+                <select
+                  id="lesson-group"
+                  value={groupId}
+                  onChange={(e) => setGroupId(e.target.value)}
+                  className="flex h-11 w-full rounded-xl border border-input bg-transparent px-3 py-1 text-sm"
+                >
+                  {groups.length === 0 && <option value="">אין קבוצות — צרו קבוצה קודם</option>}
+                  {groups.map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
               <div className="space-y-1.5">
                 <Label htmlFor="lesson-title">שם השיעור</Label>
                 <Input
@@ -251,53 +229,22 @@ export function TeacherLessons({
                 <div className="space-y-1.5">
                   <Label>שעת התחלה</Label>
                   <TimePicker
-                    value={firstStart}
-                    onChange={setFirstStart}
+                    value={startTime}
+                    onChange={setStartTime}
                     label="שעת התחלה"
                     className="rounded-xl h-11"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="lesson-groups">מספר קבוצות</Label>
-                  <Input
-                    id="lesson-groups"
-                    type="number"
-                    min={1}
-                    max={10}
-                    value={numGroups}
-                    onChange={(e) => setNumGroups(Number(e.target.value))}
+                  <Label>שעת סיום</Label>
+                  <TimePicker
+                    value={endTime}
+                    onChange={setEndTime}
+                    label="שעת סיום"
                     className="rounded-xl h-11"
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="lesson-duration">דקות לקבוצה</Label>
-                  <Input
-                    id="lesson-duration"
-                    type="number"
-                    min={10}
-                    max={120}
-                    step={5}
-                    value={slotDuration}
-                    onChange={(e) => setSlotDuration(Number(e.target.value))}
-                    className="rounded-xl h-11"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="lesson-max">מקסימום ילדים בקבוצה</Label>
-                  <Input
-                    id="lesson-max"
-                    type="number"
-                    min={1}
-                    max={30}
-                    value={maxKids}
-                    onChange={(e) => setMaxKids(Number(e.target.value))}
-                    className="rounded-xl h-11"
-                  />
-                </div>
-              </div>
-
               <div className="space-y-1.5">
                 <Label htmlFor="lesson-zoom">
                   <Video className="h-3.5 w-3.5 inline-block ml-1" />
@@ -313,33 +260,14 @@ export function TeacherLessons({
                   dir="ltr"
                 />
               </div>
-
-              {/* Preview */}
-              {title.trim() && numGroups > 0 && (
-                <div className="rounded-2xl bg-primary/5 border border-primary/10 p-4 text-sm space-y-1.5">
-                  <p className="font-semibold text-primary">תצוגה מקדימה</p>
-                  {Array.from({ length: numGroups }, (_, i) => {
-                    const [sh, sm] = firstStart.split(":").map(Number);
-                    const start = sh * 60 + sm + i * slotDuration;
-                    const h = Math.floor(start / 60);
-                    const m = start % 60;
-                    return (
-                      <p key={i} className="text-muted-foreground">
-                        קבוצה {i + 1} — {String(h).padStart(2, "0")}:
-                        {String(m).padStart(2, "0")} (עד {maxKids} ילדים)
-                      </p>
-                    );
-                  })}
-                </div>
-              )}
             </div>
             <DialogFooter>
               <Button
                 onClick={handleCreate}
-                disabled={loading || !title.trim()}
+                disabled={loading || !title.trim() || !groupId}
                 className="rounded-xl h-11 font-medium"
               >
-                {loading ? "יוצר..." : `יצירת ${numGroups} קבוצות`}
+                {loading ? "יוצר..." : "יצירת שיעור"}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -353,182 +281,101 @@ export function TeacherLessons({
           description='לחצו "שיעור חדש" כדי להתחיל'
         />
       ) : (
-        grouped.map(({ title, day, slots }) => (
-          <Card key={`${title}-${day}`} className="shadow-sm border-border/60 overflow-hidden">
+        grouped.map(({ group, lessons }) => (
+          <Card key={group.id} className="shadow-sm border-border/60 overflow-hidden">
             <CardHeader className="bg-gradient-to-l from-primary/5 to-transparent pb-3">
-              <CardTitle className="text-lg font-semibold">{title}</CardTitle>
+              <CardTitle className="text-lg font-semibold">{group.name}</CardTitle>
               <CardDescription className="text-sm">
-                יום {DAYS_HE[day]} · {slots.length} קבוצות · עד{" "}
-                {slots[0].maxKids} ילדים בקבוצה
+                {lessons.length} שיעורים
+                {group.members && group.members.length > 0 && (
+                  <span className="mr-1">
+                    · <Users className="h-3.5 w-3.5 inline-block" /> {group.members.length} ילדים
+                  </span>
+                )}
               </CardDescription>
-              <CardAction>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-destructive text-xs rounded-lg"
-                  onClick={() => setDeleteAllSlots(slots)}
-                >
-                  מחיקת הכל
-                </Button>
-              </CardAction>
             </CardHeader>
             <CardContent className="p-0">
               <div className="divide-y divide-border/50">
-                {slots.map((slot, idx) => {
-                  const isFull =
-                    slot._count.registrations >= slot.maxKids;
-                  const fillPercent = Math.round(
-                    (slot._count.registrations / slot.maxKids) * 100
-                  );
-                  return (
-                    <div
-                      key={slot.id}
-                      className={`flex items-start gap-3 px-4 py-3 transition-colors ${
-                        isFull
-                          ? "bg-emerald-50/50 dark:bg-emerald-950/10"
-                          : ""
-                      }`}
-                    >
-                      {/* Numbered circle */}
-                      <div className="flex flex-col items-center gap-1 pt-0.5">
-                        <div
-                          className={`flex h-10 w-10 items-center justify-center rounded-2xl text-sm font-bold text-white shadow-sm ${
-                            isFull ? "bg-emerald-500" : "bg-primary"
-                          }`}
-                        >
-                          {idx + 1}
-                        </div>
-                        <span className="text-[11px] font-medium text-muted-foreground">
-                          {slot.startTime}
-                        </span>
-                      </div>
-
-                      {/* Content */}
-                      <div className="flex-1 min-w-0 space-y-2">
-                        {/* Capacity bar */}
-                        <div className="space-y-1.5">
-                          <div className="flex items-center justify-between text-sm">
-                            <div className="flex items-center gap-1.5 text-muted-foreground">
-                              <Users className="h-3.5 w-3.5" />
-                              <span className="font-medium">
-                                {slot._count.registrations}/{slot.maxKids}
-                              </span>
-                            </div>
-                            {isFull && (
-                              <span className="text-[11px] font-semibold text-emerald-600 bg-emerald-100 dark:bg-emerald-950/30 px-2.5 py-0.5 rounded-full">
-                                מלא
-                              </span>
-                            )}
-                          </div>
-                          <div className="h-2 w-full rounded-full bg-muted/70 overflow-hidden">
-                            <div
-                              className={`h-full rounded-full transition-all duration-500 ${
-                                isFull
-                                  ? "bg-emerald-500"
-                                  : fillPercent > 60
-                                    ? "bg-amber-400"
-                                    : "bg-primary/60"
-                              }`}
-                              style={{ width: `${fillPercent}%` }}
-                            />
-                          </div>
-                        </div>
-
-                        {/* Registered children list */}
-                        {slot.registrations.length > 0 && (
-                          <div className="space-y-1 pt-0.5">
-                            {slot.registrations.map((r, rIdx) => (
-                              <div
-                                key={r.child.id}
-                                className="text-sm flex items-center gap-2"
-                              >
-                                <span className="flex h-5 w-5 items-center justify-center rounded-lg bg-primary/10 text-primary text-[10px] font-semibold">
-                                  {rIdx + 1}
-                                </span>
-                                <span className="font-medium">{r.child.name}</span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex flex-col gap-1 shrink-0">
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          className="rounded-lg hover:bg-primary/10"
-                          onClick={() => openEdit(slot)}
-                        >
-                          <Pencil className="h-3.5 w-3.5 text-primary" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          className="rounded-lg hover:bg-destructive/10"
-                          onClick={() => handleDeleteSlot(slot.id)}
-                        >
-                          <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                        </Button>
-                      </div>
+                {lessons.map((lesson) => (
+                  <div
+                    key={lesson.id}
+                    className="flex items-center gap-3 px-4 py-3"
+                  >
+                    <div className="flex flex-col items-center gap-0.5 min-w-[48px]">
+                      <span className="text-xs font-medium text-muted-foreground">
+                        יום {DAYS_HE[lesson.day]}
+                      </span>
+                      <span className="text-sm font-semibold">
+                        {lesson.startTime}
+                      </span>
+                      <span className="text-[11px] text-muted-foreground">
+                        {lesson.endTime}
+                      </span>
                     </div>
-                  );
-                })}
+
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm truncate">{lesson.title}</p>
+                      {lesson.zoomLink && (
+                        <a
+                          href={lesson.zoomLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-primary hover:underline flex items-center gap-1"
+                        >
+                          <Video className="h-3 w-3" />
+                          זום
+                        </a>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        className="rounded-lg hover:bg-primary/10"
+                        onClick={() => openEdit(lesson)}
+                      >
+                        <Pencil className="h-3.5 w-3.5 text-primary" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        className="rounded-lg hover:bg-destructive/10"
+                        onClick={() => handleDeleteLesson(lesson.id)}
+                      >
+                        <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>
         ))
       )}
 
-      {/* Delete All confirmation dialog */}
-      <Dialog
-        open={!!deleteAllSlots}
-        onOpenChange={(open) => !open && setDeleteAllSlots(null)}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>מחיקת כל הקבוצות</DialogTitle>
-            <DialogDescription>
-              האם למחוק את כל {deleteAllSlots?.length} הקבוצות של שיעור זה?
-              {deleteAllSlots?.some((s) => s._count.registrations > 0) && (
-                <span className="block mt-1 text-destructive font-medium">
-                  שימו לב: יש ילדים רשומים בחלק מהקבוצות.
-                </span>
-              )}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="gap-2">
-            <Button
-              variant="outline"
-              className="rounded-xl"
-              onClick={() => setDeleteAllSlots(null)}
-            >
-              ביטול
-            </Button>
-            <Button
-              variant="destructive"
-              className="rounded-xl"
-              disabled={loading}
-              onClick={() => deleteAllSlots && handleDeleteAll(deleteAllSlots)}
-            >
-              {loading ? "מוחק..." : "מחיקת הכל"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit slot dialog */}
+      {/* Edit lesson dialog */}
       <Dialog
         open={!!editSlot}
         onOpenChange={(open) => !open && setEditSlot(null)}
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>עריכת קבוצה</DialogTitle>
+            <DialogTitle>עריכת שיעור</DialogTitle>
             <DialogDescription>
-              {editSlot?.title} — {editSlot?.startTime}
+              {editSlot?.group.name} — יום {editSlot ? DAYS_HE[editSlot.day] : ""}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="edit-title">שם השיעור</Label>
+              <Input
+                id="edit-title"
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                className="rounded-xl h-11"
+              />
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label>שעת התחלה</Label>
@@ -548,18 +395,6 @@ export function TeacherLessons({
                   className="rounded-xl h-11"
                 />
               </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="edit-max">מקסימום ילדים</Label>
-              <Input
-                id="edit-max"
-                type="number"
-                min={1}
-                max={30}
-                value={editMaxKids}
-                onChange={(e) => setEditMaxKids(Number(e.target.value))}
-                className="rounded-xl h-11"
-              />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="edit-zoom">

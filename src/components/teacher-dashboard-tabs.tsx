@@ -18,12 +18,9 @@ interface Lesson {
   day: number;
   startTime: string;
   endTime: string;
-  maxKids: number;
   zoomLink: string | null;
-  groupId: string | null;
-  group: { id: string; name: string } | null;
-  _count: { registrations: number };
-  registrations: { child: { id: string; name: string } }[];
+  groupId: string;
+  group: { id: string; name: string; members?: { child: { id: string; name: string } }[] };
 }
 
 export function TeacherDashboardTabs({

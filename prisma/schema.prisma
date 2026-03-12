@@ -123,7 +123,6 @@ model Child {
   childParents          ChildParent[]
   invites               ChildInvite[]
   groupMemberships      GroupMember[]
-  lessonRegistrations   LessonRegistration[]
 }
 
 // ── Personal events (parent-created) ─────────────────────────
@@ -277,7 +276,7 @@ model GroupInvite {
   usedBy    User? @relation("GroupInviteRedeemer", fields: [usedByUserId], references: [id], onDelete: SetNull)
 }
 
-// ── Lesson scheduling (Teacher → Parent registration) ────────
+// ── Lesson scheduling (Teacher creates lessons per group) ────────
 
 model Lesson {
   id        String @id @default(cuid())
@@ -285,26 +284,12 @@ model Lesson {
   day       Int    // 0=Sun, 1=Mon … 6=Sat
   startTime String // "HH:mm"
   endTime   String // "HH:mm"
-  maxKids   Int
   zoomLink      String?
   teacherId     String
-  groupId       String?
+  groupId       String
   googleEventId String?  // Google Calendar event ID for sync
   createdAt     DateTime @default(now())
 
-  teacher       User                @relation(fields: [teacherId], references: [id], onDelete: Cascade)
-  group         Group?              @relation(fields: [groupId], references: [id], onDelete: SetNull)
-  registrations LessonRegistration[]
-}
-
-model LessonRegistration {
-  id        String   @id @default(cuid())
-  lessonId  String
-  childId   String
-  createdAt DateTime @default(now())
-
-  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
-  child  Child  @relation(fields: [childId], references: [id], onDelete: Cascade)
-
-  @@unique([lessonId, childId])
+  teacher       User   @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  group         Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
 }

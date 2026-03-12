@@ -5,7 +5,7 @@ import { deleteFromGoogleCalendar } from "@/lib/google-calendar";
 
 type Params = { params: Promise<{ id: string }> };
 
-// PUT /api/lessons/:id — teacher edits a lesson slot
+// PUT /api/lessons/:id — teacher edits a lesson
 export async function PUT(req: NextRequest, { params }: Params) {
   const { error, session } = await requireRole("TEACHER", "SUPERADMIN");
   if (error) return error;
@@ -20,15 +20,13 @@ export async function PUT(req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const { title, day, startTime, endTime, maxKids, zoomLink } =
-    await req.json();
+  const { title, day, startTime, endTime, zoomLink } = await req.json();
 
   const data: Record<string, unknown> = {};
   if (title?.trim()) data.title = title.trim();
   if (day != null && day >= 0 && day <= 6) data.day = day;
   if (startTime) data.startTime = startTime;
   if (endTime) data.endTime = endTime;
-  if (maxKids != null && maxKids >= 1 && maxKids <= 50) data.maxKids = maxKids;
   if (zoomLink !== undefined) data.zoomLink = zoomLink?.trim() || null;
 
   if (Object.keys(data).length === 0) {

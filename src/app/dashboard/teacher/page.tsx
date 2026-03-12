@@ -27,11 +27,12 @@ export default async function TeacherDashboardPage() {
     prisma.lesson.findMany({
       where: { teacherId: session.user.id },
       include: {
-        teacher: { select: { name: true } },
-        group: { select: { id: true, name: true } },
-        _count: { select: { registrations: true } },
-        registrations: {
-          include: { child: { select: { id: true, name: true } } },
+        group: {
+          select: {
+            id: true,
+            name: true,
+            members: { select: { child: { select: { id: true, name: true } } } },
+          },
         },
       },
       orderBy: [{ day: "asc" }, { startTime: "asc" }],
