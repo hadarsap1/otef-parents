@@ -143,6 +143,28 @@ export function HelpContent({
           <strong>טיפ:</strong> כפתור היומן מופיע בעמודי המפגשים, השיעורים,
           האירועים האישיים ובפיד היומי בעמוד הראשי.
         </p>
+        <div className="rounded-lg bg-muted/50 p-3 space-y-1.5">
+          <p className="font-medium text-foreground text-xs">מה האפליקציה עושה עם היומן שלכם?</p>
+          <ul className="list-disc list-inside space-y-1 text-xs">
+            <li>
+              <strong>מוסיפה</strong> אירועים ליומן רק כשאתם לוחצים על כפתור
+              היומן.
+            </li>
+            <li>
+              <strong>מוחקת</strong> אירועים מהיומן רק כשאתם מבטלים סנכרון.
+            </li>
+            <li>
+              האפליקציה <strong>לא קוראת</strong> את תוכן היומן הקיים שלכם.
+            </li>
+          </ul>
+          <p className="text-xs">
+            ניתן לנתק את הגישה ליומן בכל עת דרך{" "}
+            <a href="/dashboard/settings" className="text-primary hover:underline">
+              הגדרות חשבון
+            </a>
+            .
+          </p>
+        </div>
       </Section>
 
       {/* Daily digest email */}

@@ -8,7 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LogOut, HelpCircle } from "lucide-react";
+import { LogOut, HelpCircle, Settings } from "lucide-react";
 import Link from "next/link";
 import { DigestSettingsDialog } from "@/components/digest-settings";
 
@@ -59,6 +59,12 @@ export function DashboardNav({ user }: DashboardNavProps) {
               <p className="text-xs text-muted-foreground">{user.email}</p>
             </div>
             <DigestSettingsDialog />
+            <DropdownMenuItem
+              onClick={() => { window.location.href = "/dashboard/settings"; }}
+            >
+              <Settings className="h-4 w-4" />
+              הגדרות חשבון
+            </DropdownMenuItem>
             <DropdownMenuItem onClick={() => signOut({ callbackUrl: "/login" })}>
               <LogOut className="h-4 w-4" />
               התנתקות

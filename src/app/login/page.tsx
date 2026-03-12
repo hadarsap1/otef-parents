@@ -53,6 +53,14 @@ function LoginContent() {
             </svg>
             התחברות עם Google
           </Button>
+          <p className="text-center text-xs text-muted-foreground leading-relaxed">
+            בהתחברות תתבקשו לאשר גישה ליומן Google — האפליקציה{" "}
+            <strong>רק מוסיפה ומוחקת</strong> אירועים שנוצרו דרכה, ולא קוראת את
+            היומן הקיים.{" "}
+            <a href="/privacy" className="text-primary hover:underline">
+              למידע נוסף
+            </a>
+          </p>
           <a
             href="/walkthrough"
             className="block w-full text-center rounded-lg border border-border py-2.5 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
@@ -66,6 +74,10 @@ function LoginContent() {
             {" · "}
             <a href="/privacy" className="underline hover:text-foreground">
               מדיניות פרטיות
+            </a>
+            {" · "}
+            <a href="/terms" className="underline hover:text-foreground">
+              תנאי שימוש
             </a>
           </p>
         </CardContent>
