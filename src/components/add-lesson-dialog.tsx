@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { TimePicker } from "@/components/ui/time-picker";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Label } from "@/components/ui/label";
 import {
   Dialog,
@@ -172,13 +173,11 @@ export function AddLessonDialog({ onAdded }: { onAdded?: () => void }) {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="lesson-date">תאריך</Label>
-            <Input
-              id="lesson-date"
-              type="date"
+            <Label>תאריך</Label>
+            <DatePicker
               value={date}
-              onChange={(e) => setDate(e.target.value)}
-              required
+              onChange={setDate}
+              label="תאריך שיעור"
             />
           </div>
 

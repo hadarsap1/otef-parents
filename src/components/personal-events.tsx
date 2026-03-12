@@ -7,6 +7,7 @@ import { AddToCalendarButton } from "@/components/add-to-calendar-button";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { TimePicker } from "@/components/ui/time-picker";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Label } from "@/components/ui/label";
 import {
   Dialog,
@@ -140,13 +141,12 @@ export function AddEventDialog({ onAdded }: { onAdded?: () => void }) {
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="event-date">תאריך</Label>
-            <Input
-              id="event-date"
-              type="date"
+            <Label>תאריך</Label>
+            <DatePicker
               value={date}
-              onChange={(e) => setDate(e.target.value)}
-              className="rounded-xl h-11"
+              onChange={setDate}
+              label="תאריך אירוע"
+              className="rounded-xl"
             />
           </div>
 

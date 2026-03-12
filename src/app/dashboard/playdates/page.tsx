@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { TimePicker } from "@/components/ui/time-picker";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Label } from "@/components/ui/label";
 import {
   Dialog,
@@ -93,7 +94,7 @@ export default function PlaydatesPage() {
   // Create form state
   const [selectedGroupId, setSelectedGroupId] = useState("");
   const [address, setAddress] = useState("");
-  const [date, setDate] = useState("");
+  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [maxCapacity, setMaxCapacity] = useState("5");
@@ -274,14 +275,11 @@ export default function PlaydatesPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="pd-date">תאריך</Label>
-                  <Input
-                    id="pd-date"
-                    type="date"
+                  <Label>תאריך</Label>
+                  <DatePicker
                     value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                    dir="ltr"
-                    required
+                    onChange={setDate}
+                    label="תאריך מפגש"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-3">

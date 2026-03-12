@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useRef, useEffect } from "react";
 import { cn } from "@/lib/utils";
+import { WheelColumn } from "./wheel-column";
 
 interface TimePickerProps {
   value: string; // "HH:MM"
@@ -17,134 +18,6 @@ const MINUTES = Array.from({ length: 12 }, (_, i) =>
   String(i * 5).padStart(2, "0")
 );
 
-const ITEM_HEIGHT = 40;
-const VISIBLE_ITEMS = 5;
-const PICKER_HEIGHT = ITEM_HEIGHT * VISIBLE_ITEMS;
-
-function WheelColumn({
-  items,
-  selected,
-  onSelect,
-}: {
-  items: string[];
-  selected: string;
-  onSelect: (val: string) => void;
-}) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const isScrolling = useRef(false);
-  const scrollTimeout = useRef<ReturnType<typeof setTimeout>>(undefined);
-
-  const selectedIndex = items.indexOf(selected);
-
-  // Scroll to selected on mount and when selected changes externally
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el || isScrolling.current) return;
-    const target = selectedIndex * ITEM_HEIGHT;
-    // Use instant scroll on first render so items are positioned correctly,
-    // then smooth for subsequent changes
-    const isInitial = el.scrollTop === 0 && selectedIndex === 0;
-    if (isInitial) {
-      // Force a layout recalc then set position
-      el.scrollTop = 0;
-    } else {
-      el.scrollTo({ top: target, behavior: "smooth" });
-    }
-  }, [selectedIndex]);
-
-  // Ensure correct position after mount (handles cases where layout isn't ready)
-  useEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const timer = setTimeout(() => {
-      if (!isScrolling.current) {
-        el.scrollTo({ top: selectedIndex * ITEM_HEIGHT, behavior: "instant" as ScrollBehavior });
-      }
-    }, 50);
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const snapToNearest = useCallback(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    // Use floor + 0.5 rounding to ensure index 0 is reachable even with small scrollTop values
-    const rawIndex = el.scrollTop / ITEM_HEIGHT;
-    const index = Math.round(rawIndex);
-    const clamped = Math.max(0, Math.min(index, items.length - 1));
-    const targetTop = clamped * ITEM_HEIGHT;
-    // Only scroll if not already at the target (avoids infinite scroll events)
-    if (Math.abs(el.scrollTop - targetTop) > 1) {
-      el.scrollTo({ top: targetTop, behavior: "smooth" });
-    }
-    if (items[clamped] !== selected) {
-      onSelect(items[clamped]);
-    }
-    isScrolling.current = false;
-  }, [items, selected, onSelect]);
-
-  const handleScroll = useCallback(() => {
-    isScrolling.current = true;
-    if (scrollTimeout.current) clearTimeout(scrollTimeout.current);
-    scrollTimeout.current = setTimeout(snapToNearest, 80);
-  }, [snapToNearest]);
-
-  return (
-    <div className="relative" style={{ height: PICKER_HEIGHT }}>
-      {/* Highlight bar */}
-      <div
-        className="absolute inset-x-0 pointer-events-none z-10 border-y border-primary/30 bg-primary/5 rounded-lg"
-        style={{
-          top: ITEM_HEIGHT * 2,
-          height: ITEM_HEIGHT,
-        }}
-      />
-      {/* Fade top */}
-      <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-white dark:from-background to-transparent z-20 pointer-events-none" />
-      {/* Fade bottom */}
-      <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-white dark:from-background to-transparent z-20 pointer-events-none" />
-
-      <div
-        ref={containerRef}
-        className="h-full overflow-y-auto scrollbar-hide overscroll-contain"
-        style={{
-          WebkitOverflowScrolling: "touch",
-        }}
-        onScroll={handleScroll}
-      >
-        {/* Top padding */}
-        <div style={{ height: ITEM_HEIGHT * 2 }} />
-        {items.map((item) => (
-          <div
-            key={item}
-            className={cn(
-              "flex items-center justify-center transition-all duration-150 cursor-pointer select-none",
-              item === selected
-                ? "text-primary font-bold text-xl"
-                : "text-muted-foreground text-base"
-            )}
-            style={{
-              height: ITEM_HEIGHT,
-            }}
-            onClick={() => {
-              onSelect(item);
-              const el = containerRef.current;
-              if (el) {
-                const idx = items.indexOf(item);
-                el.scrollTo({ top: idx * ITEM_HEIGHT, behavior: "smooth" });
-              }
-            }}
-          >
-            {item}
-          </div>
-        ))}
-        {/* Bottom padding */}
-        <div style={{ height: ITEM_HEIGHT * 2 }} />
-      </div>
-    </div>
-  );
-}
-
 export function TimePicker({
   value,
   onChange,
@@ -152,6 +25,7 @@ export function TimePicker({
   className,
 }: TimePickerProps) {
   const [open, setOpen] = useState(false);
+  const userInteracted = useRef(false);
   const [hour, setHour] = useState(() => (value || "08:00").split(":")[0]);
   const [minute, setMinute] = useState(() => {
     const m = parseInt((value || "08:00").split(":")[1] || "0", 10);
@@ -173,10 +47,20 @@ export function TimePicker({
 
   const displayValue = value ? `${hour}:${minute}` : "";
 
-  const handleConfirm = () => {
-    onChange(`${hour}:${minute}`);
-    setOpen(false);
-  };
+  // Reset interaction flag when picker opens
+  useEffect(() => {
+    if (open) {
+      userInteracted.current = false;
+    }
+  }, [open]);
+
+  // Call onChange when hour or minute changes, but only after user interaction
+  useEffect(() => {
+    if (open && userInteracted.current) {
+      onChange(`${hour}:${minute}`);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hour, minute]);
 
   return (
     <>
@@ -219,24 +103,10 @@ export function TimePicker({
         >
           <div className="w-full max-w-lg bg-white dark:bg-background rounded-t-2xl shadow-2xl animate-in slide-in-from-bottom duration-300 pb-[env(safe-area-inset-bottom)]">
             {/* Header */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-border/50">
-              <button
-                type="button"
-                onClick={() => setOpen(false)}
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                ביטול
-              </button>
+            <div className="flex items-center justify-center px-4 py-3 border-b border-border/50">
               <span className="text-sm font-semibold">
                 {label || "בחירת שעה"}
               </span>
-              <button
-                type="button"
-                onClick={handleConfirm}
-                className="text-sm font-semibold text-primary hover:text-primary/80 transition-colors"
-              >
-                אישור
-              </button>
             </div>
 
             {/* Wheels */}
@@ -245,7 +115,7 @@ export function TimePicker({
                 <WheelColumn
                   items={HOURS}
                   selected={hour}
-                  onSelect={setHour}
+                  onSelect={(v) => { userInteracted.current = true; setHour(v); }}
                 />
               </div>
               <div className="text-2xl font-bold text-muted-foreground pb-1">
@@ -255,9 +125,20 @@ export function TimePicker({
                 <WheelColumn
                   items={MINUTES}
                   selected={minute}
-                  onSelect={setMinute}
+                  onSelect={(v) => { userInteracted.current = true; setMinute(v); }}
                 />
               </div>
+            </div>
+
+            {/* Close button */}
+            <div className="px-4 pb-4">
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                className="w-full rounded-xl bg-primary py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
+              >
+                סגירה
+              </button>
             </div>
           </div>
         </div>

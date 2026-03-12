@@ -12,7 +12,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, UserRound, Share2, KeyRound, UserPlus, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, UserRound, Share2, KeyRound, UserPlus, Search, ChevronDown } from "lucide-react";
 import { LoadingState } from "@/components/ui/loading-state";
 import { EmptyState } from "@/components/ui/empty-state";
 import { JoinGroupDialog } from "@/components/join-group-dialog";
@@ -49,6 +49,7 @@ export default function ChildrenPage() {
   const [unclaimedGroups, setUnclaimedGroups] = useState<UnclaimedGroup[]>([]);
   const [claimingId, setClaimingId] = useState<string | null>(null);
   const [claimSearch, setClaimSearch] = useState("");
+  const [openGroupIds, setOpenGroupIds] = useState<Set<string>>(new Set());
 
   // Add/edit dialog state
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -517,32 +518,61 @@ export default function ChildrenPage() {
               : group.children;
             if (filtered.length === 0) return null;
 
+            // Auto-expand when searching, otherwise use toggle state
+            const isOpen = claimSearch ? true : openGroupIds.has(group.groupId);
+
             return (
               <Card key={group.groupId}>
-                <CardHeader className="pb-2 pt-3 px-4">
-                  <CardTitle className="text-base">{group.groupName}</CardTitle>
-                </CardHeader>
-                <CardContent className="px-4 pb-3">
-                  <div className="grid gap-1.5">
-                    {filtered.map((child) => (
-                      <div
-                        key={child.id}
-                        className="flex items-center justify-between py-1.5 border-b border-dashed last:border-0"
-                      >
-                        <span className="text-sm">{child.name}</span>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-7 text-xs"
-                          disabled={claimingId === child.id}
-                          onClick={() => claimChild(child.id)}
-                        >
-                          {claimingId === child.id ? "משייך..." : "זה הילד/ה שלי"}
-                        </Button>
-                      </div>
-                    ))}
+                <button
+                  type="button"
+                  className="flex items-center justify-between w-full px-4 py-3 text-right"
+                  onClick={() => {
+                    setOpenGroupIds((prev) => {
+                      const next = new Set(prev);
+                      if (next.has(group.groupId)) {
+                        next.delete(group.groupId);
+                      } else {
+                        next.add(group.groupId);
+                      }
+                      return next;
+                    });
+                  }}
+                >
+                  <div className="flex items-center gap-2">
+                    <CardTitle className="text-base">{group.groupName}</CardTitle>
+                    <span className="text-xs text-muted-foreground">
+                      ({filtered.length})
+                    </span>
                   </div>
-                </CardContent>
+                  <ChevronDown
+                    className={`h-4 w-4 text-muted-foreground transition-transform ${
+                      isOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+                {isOpen && (
+                  <CardContent className="px-4 pb-3 pt-0">
+                    <div className="grid gap-1.5">
+                      {filtered.map((child) => (
+                        <div
+                          key={child.id}
+                          className="flex items-center justify-between py-1.5 border-b border-dashed last:border-0"
+                        >
+                          <span className="text-sm">{child.name}</span>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 text-xs"
+                            disabled={claimingId === child.id}
+                            onClick={() => claimChild(child.id)}
+                          >
+                            {claimingId === child.id ? "משייך..." : "זה הילד/ה שלי"}
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                )}
               </Card>
             );
           })}

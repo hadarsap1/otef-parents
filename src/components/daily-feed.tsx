@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { TimePicker } from "@/components/ui/time-picker";
+import { DatePicker } from "@/components/ui/date-picker";
 import { cn } from "@/lib/utils";
 import { formatTime, formatDateRelative } from "@/lib/format";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -152,11 +153,11 @@ function LessonRow({
           placeholder="מקצוע"
           className="rounded-xl h-10"
         />
-        <Input
-          type="date"
+        <DatePicker
           value={date}
-          onChange={(e) => setDate(e.target.value)}
-          className="rounded-xl h-10"
+          onChange={setDate}
+          label="תאריך"
+          className="rounded-xl"
         />
         <div className="grid grid-cols-2 gap-2">
           <TimePicker
