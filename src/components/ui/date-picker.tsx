@@ -16,6 +16,8 @@ const HEBREW_MONTHS = [
   "יולי", "אוגוסט", "ספטמבר", "אוקטובר", "נובמבר", "דצמבר",
 ];
 
+const HEBREW_DAYS_SHORT = ["א׳", "ב׳", "ג׳", "ד׳", "ה׳", "ו׳", "ש׳"];
+
 function getDaysInMonth(year: number, month: number): number {
   return new Date(year, month + 1, 0).getDate();
 }
@@ -92,6 +94,12 @@ export function DatePicker({
   const days = useMemo(() =>
     Array.from({ length: daysInMonth }, (_, i) => String(i + 1)),
   [daysInMonth]);
+  const dayLabels = useMemo(() =>
+    Array.from({ length: daysInMonth }, (_, i) => {
+      const dow = new Date(year, month, i + 1).getDay();
+      return `${HEBREW_DAYS_SHORT[dow]} ${i + 1}`;
+    }),
+  [daysInMonth, year, month]);
 
   // Clamp day if month changes
   useEffect(() => {
@@ -168,9 +176,10 @@ export function DatePicker({
 
             {/* Wheels */}
             <div className="flex items-center justify-center gap-1 px-4 py-4" dir="rtl">
-              <div className="flex-[1.2]">
+              <div className="flex-[1.5]">
                 <WheelColumn
                   items={days}
+                  labels={dayLabels}
                   selected={String(Math.min(day, daysInMonth))}
                   onSelect={(v) => { userInteracted.current = true; setDay(parseInt(v, 10)); }}
                 />
