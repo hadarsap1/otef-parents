@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Clock, Trash2, Video, Pencil, Users } from "lucide-react";
+import { Plus, Clock, Trash2, Video, Pencil, Users, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -82,10 +82,36 @@ export function TeacherLessons({
   // Create form state
   const [title, setTitle] = useState("");
   const [day, setDay] = useState(0);
-  const [startTime, setStartTime] = useState("13:00");
-  const [endTime, setEndTime] = useState("13:30");
-  const [groupId, setGroupId] = useState(groups[0]?.id ?? "");
   const [zoomLink, setZoomLink] = useState("");
+  const [slots, setSlots] = useState([
+    { groupId: groups[0]?.id ?? "", startTime: "13:00", endTime: "13:30" },
+  ]);
+
+  function updateSlot(index: number, field: string, value: string) {
+    setSlots((prev) =>
+      prev.map((s, i) => (i === index ? { ...s, [field]: value } : s))
+    );
+  }
+
+  function addSlot() {
+    const last = slots[slots.length - 1];
+    // Pick next available group that isn't already used
+    const usedGroupIds = new Set(slots.map((s) => s.groupId));
+    const nextGroup = groups.find((g) => !usedGroupIds.has(g.id));
+    setSlots((prev) => [
+      ...prev,
+      {
+        groupId: nextGroup?.id ?? groups[0]?.id ?? "",
+        startTime: last.startTime,
+        endTime: last.endTime,
+      },
+    ]);
+  }
+
+  function removeSlot(index: number) {
+    if (slots.length <= 1) return;
+    setSlots((prev) => prev.filter((_, i) => i !== index));
+  }
 
   // Edit form state
   const [editTitle, setEditTitle] = useState("");
@@ -96,27 +122,33 @@ export function TeacherLessons({
   const grouped = groupByGroup(initialLessons);
 
   async function handleCreate() {
-    if (!title.trim() || !groupId) return;
+    const validSlots = slots.filter((s) => s.groupId);
+    if (!title.trim() || validSlots.length === 0) return;
     setLoading(true);
     try {
-      const res = await fetch("/api/lessons", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: title.trim(),
-          day,
-          startTime,
-          endTime,
-          groupId,
-          zoomLink: zoomLink.trim() || null,
-        }),
-      });
-      if (res.ok) {
+      const results = await Promise.all(
+        validSlots.map((slot) =>
+          fetch("/api/lessons", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              title: title.trim(),
+              day,
+              startTime: slot.startTime,
+              endTime: slot.endTime,
+              groupId: slot.groupId,
+              zoomLink: zoomLink.trim() || null,
+            }),
+          })
+        )
+      );
+      if (results.some((r) => r.ok)) {
         setTitle("");
         setDay(0);
-        setStartTime("13:00");
-        setEndTime("13:30");
         setZoomLink("");
+        setSlots([
+          { groupId: groups[0]?.id ?? "", startTime: "13:00", endTime: "13:30" },
+        ]);
         setCreateOpen(false);
         router.refresh();
       }
@@ -185,22 +217,6 @@ export function TeacherLessons({
             </DialogHeader>
             <div className="space-y-3">
               <div className="space-y-1.5">
-                <Label htmlFor="lesson-group">קבוצה</Label>
-                <select
-                  id="lesson-group"
-                  value={groupId}
-                  onChange={(e) => setGroupId(e.target.value)}
-                  className="flex h-11 w-full rounded-xl border border-input bg-transparent px-3 py-1 text-sm"
-                >
-                  {groups.length === 0 && <option value="">אין קבוצות — צרו קבוצה קודם</option>}
-                  {groups.map((g) => (
-                    <option key={g.id} value={g.id}>
-                      {g.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="space-y-1.5">
                 <Label htmlFor="lesson-title">שם השיעור</Label>
                 <Input
                   id="lesson-title"
@@ -225,26 +241,74 @@ export function TeacherLessons({
                   ))}
                 </select>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label>שעת התחלה</Label>
-                  <TimePicker
-                    value={startTime}
-                    onChange={setStartTime}
-                    label="שעת התחלה"
-                    className="rounded-xl h-11"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>שעת סיום</Label>
-                  <TimePicker
-                    value={endTime}
-                    onChange={setEndTime}
-                    label="שעת סיום"
-                    className="rounded-xl h-11"
-                  />
-                </div>
+
+              {/* Group + time slots */}
+              <div className="space-y-2">
+                {slots.map((slot, idx) => (
+                  <div
+                    key={idx}
+                    className="rounded-xl border border-border/60 p-3 space-y-2"
+                  >
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs text-muted-foreground">
+                        {slots.length > 1 ? `קבוצה ${idx + 1}` : "קבוצה"}
+                      </Label>
+                      {slots.length > 1 && (
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          className="rounded-lg hover:bg-destructive/10 h-6 w-6"
+                          onClick={() => removeSlot(idx)}
+                        >
+                          <Trash2 className="h-3 w-3 text-destructive" />
+                        </Button>
+                      )}
+                    </div>
+                    <select
+                      value={slot.groupId}
+                      onChange={(e) => updateSlot(idx, "groupId", e.target.value)}
+                      className="flex h-10 w-full rounded-xl border border-input bg-transparent px-3 py-1 text-sm"
+                    >
+                      {groups.length === 0 && (
+                        <option value="">אין קבוצות — צרו קבוצה קודם</option>
+                      )}
+                      {groups.map((g) => (
+                        <option key={g.id} value={g.id}>
+                          {g.name}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="grid grid-cols-2 gap-2">
+                      <TimePicker
+                        value={slot.startTime}
+                        onChange={(v) => updateSlot(idx, "startTime", v)}
+                        label="התחלה"
+                        className="rounded-xl h-10"
+                      />
+                      <TimePicker
+                        value={slot.endTime}
+                        onChange={(v) => updateSlot(idx, "endTime", v)}
+                        label="סיום"
+                        className="rounded-xl h-10"
+                      />
+                    </div>
+                  </div>
+                ))}
+
+                {groups.length > 1 && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="w-full rounded-xl text-xs"
+                    onClick={addSlot}
+                  >
+                    <Copy className="h-3.5 w-3.5" data-icon="inline-start" />
+                    הוסיפו קבוצה נוספת בשעה אחרת
+                  </Button>
+                )}
               </div>
+
               <div className="space-y-1.5">
                 <Label htmlFor="lesson-zoom">
                   <Video className="h-3.5 w-3.5 inline-block ml-1" />
@@ -264,10 +328,14 @@ export function TeacherLessons({
             <DialogFooter>
               <Button
                 onClick={handleCreate}
-                disabled={loading || !title.trim() || !groupId}
+                disabled={loading || !title.trim() || !slots.some((s) => s.groupId)}
                 className="rounded-xl h-11 font-medium"
               >
-                {loading ? "יוצר..." : "יצירת שיעור"}
+                {loading
+                  ? "יוצר..."
+                  : slots.length > 1
+                    ? `יצירת ${slots.length} שיעורים`
+                    : "יצירת שיעור"}
               </Button>
             </DialogFooter>
           </DialogContent>
