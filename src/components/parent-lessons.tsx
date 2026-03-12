@@ -11,6 +11,7 @@ import {
   CardContent,
 } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
+import { AddToCalendarButton } from "@/components/add-to-calendar-button";
 import {
   Dialog,
   DialogContent,
@@ -271,18 +272,21 @@ export function ParentLessons({
                             <Check className="h-4 w-4" />
                             <span className="font-medium">{child.name} רשום/ה</span>
                           </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-auto py-1 px-2.5 text-xs text-destructive hover:text-destructive rounded-lg"
-                            disabled={loading === child.id}
-                            onClick={(e: React.MouseEvent) => {
-                              e.stopPropagation();
-                              handleUnregister(slot.id, child.id);
-                            }}
-                          >
-                            ביטול
-                          </Button>
+                          <div className="flex items-center gap-1.5">
+                            <AddToCalendarButton type="lesson" id={slot.id} compact />
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-auto py-1 px-2.5 text-xs text-destructive hover:text-destructive rounded-lg"
+                              disabled={loading === child.id}
+                              onClick={(e: React.MouseEvent) => {
+                                e.stopPropagation();
+                                handleUnregister(slot.id, child.id);
+                              }}
+                            >
+                              ביטול
+                            </Button>
+                          </div>
                         </div>
                       ))}
                     </div>

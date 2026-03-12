@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Users, BookOpen, UsersRound, GraduationCap, RotateCcw, Trash2, Pencil, ChevronDown, ChevronUp, UserRound } from "lucide-react";
+import { Users, BookOpen, UsersRound, GraduationCap, RotateCcw, Trash2, Pencil, ChevronDown, ChevronUp, UserRound, School } from "lucide-react";
 import { LoadingState } from "@/components/ui/loading-state";
 import {
   Dialog,
@@ -23,7 +23,7 @@ interface UserRow {
   image: string | null;
   role: string;
   createdAt: string;
-  _count: { children: number; lessons: number; ownedGroups: number };
+  _count: { children: number; childParents: number; lessons: number; ownedGroups: number };
 }
 
 interface Stats {
@@ -55,12 +55,14 @@ const ROLE_LABELS: Record<string, string> = {
   PARENT: "הורה",
   TEACHER: "מורה",
   ADMIN: "מנהל",
+  SUPERADMIN: "מנהל-על",
 };
 
 const ROLE_COLORS: Record<string, string> = {
   PARENT: "bg-blue-100 text-blue-700",
   TEACHER: "bg-green-100 text-green-700",
   ADMIN: "bg-purple-100 text-purple-700",
+  SUPERADMIN: "bg-red-100 text-red-700",
 };
 
 const SYSTEM_EMAIL = "system@otef-parents.app";
@@ -82,17 +84,22 @@ export function AdminPanel() {
   const [editingGroup, setEditingGroup] = useState<string | null>(null);
   const [editGroupName, setEditGroupName] = useState("");
   const [removingMember, setRemovingMember] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"users" | "groups">("groups");
+  const [activeTab, setActiveTab] = useState<"schools" | "users" | "groups">("schools");
+
+  // Schools state
+  const [schools, setSchools] = useState<{ id: string; name: string; slug: string; _count: { groups: number; members: number } }[]>([]);
 
   useEffect(() => {
     Promise.all([
       fetch("/api/admin/users").then((r) => r.json()),
       fetch("/api/admin/stats").then((r) => r.json()),
       fetch("/api/admin/groups").then((r) => r.json()),
-    ]).then(([usersData, statsData, groupsData]) => {
+      fetch("/api/schools").then((r) => r.json()),
+    ]).then(([usersData, statsData, groupsData, schoolsData]) => {
       setUsers(usersData);
       setStats(statsData);
       setGroups(groupsData);
+      setSchools(schoolsData);
       setLoading(false);
     });
   }, []);
@@ -119,7 +126,7 @@ export function AdminPanel() {
       setUsers((prev) =>
         prev.map((u) =>
           u.id === userId
-            ? { ...u, _count: { children: 0, lessons: 0, ownedGroups: 0 } }
+            ? { ...u, _count: { children: 0, childParents: 0, lessons: 0, ownedGroups: 0 } }
             : u
         )
       );
@@ -200,6 +207,14 @@ export function AdminPanel() {
       {/* Tab switcher */}
       <div className="flex gap-2">
         <Button
+          variant={activeTab === "schools" ? "default" : "outline"}
+          size="sm"
+          onClick={() => setActiveTab("schools")}
+        >
+          <School className="h-4 w-4" />
+          בתי ספר
+        </Button>
+        <Button
           variant={activeTab === "groups" ? "default" : "outline"}
           size="sm"
           onClick={() => setActiveTab("groups")}
@@ -216,6 +231,33 @@ export function AdminPanel() {
           משתמשים
         </Button>
       </div>
+
+      {/* Schools tab */}
+      {activeTab === "schools" && (
+        <div className="space-y-3">
+          {schools.map((school) => (
+            <Card key={school.id}>
+              <CardHeader className="pb-2 pt-3 px-4">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base">
+                    <a href={`/school/${school.slug}`} className="hover:underline">
+                      {school.name}
+                    </a>
+                  </CardTitle>
+                  <span className="text-xs text-muted-foreground">
+                    {school._count.groups} קבוצות · {school._count.members} מורים
+                  </span>
+                </div>
+              </CardHeader>
+            </Card>
+          ))}
+          {schools.length === 0 && (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              אין בתי ספר
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Groups tab */}
       {activeTab === "groups" && (
@@ -367,7 +409,7 @@ export function AdminPanel() {
                     {user.email}
                   </p>
                   <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-                    <span>{user._count.children} ילדים</span>
+                    <span>{user._count.children + user._count.childParents} ילדים</span>
                     <span>·</span>
                     <span>{user._count.ownedGroups} קבוצות</span>
                     <span>·</span>
@@ -387,6 +429,7 @@ export function AdminPanel() {
                     <option value="PARENT">{ROLE_LABELS.PARENT}</option>
                     <option value="TEACHER">{ROLE_LABELS.TEACHER}</option>
                     <option value="ADMIN">{ROLE_LABELS.ADMIN}</option>
+                    <option value="SUPERADMIN">{ROLE_LABELS.SUPERADMIN}</option>
                   </select>
                   <Button
                     variant="ghost"

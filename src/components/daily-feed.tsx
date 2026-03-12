@@ -444,7 +444,7 @@ export function DailyFeed({ date }: { date?: string }) {
     );
   }
 
-  if (!data || data.children.length === 0) {
+  if (!data) {
     return (
       <EmptyState
         icon={BookOpen}

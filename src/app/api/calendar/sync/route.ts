@@ -21,6 +21,16 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  function toIsraelTime(date: Date) {
+    const d = date.toLocaleDateString("en-CA", { timeZone: "Asia/Jerusalem" });
+    const t = date.toLocaleTimeString("en-GB", {
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: "Asia/Jerusalem",
+    });
+    return { date: d, time: t };
+  }
+
   let calendarEvent: {
     title: string;
     date: string;
@@ -64,14 +74,17 @@ export async function POST(req: NextRequest) {
       if (!schedule) {
         return NextResponse.json({ error: "Lesson not found" }, { status: 404 });
       }
-      const startH = schedule.startTime.toISOString().slice(11, 16);
-      const endH = schedule.endTime.toISOString().slice(11, 16);
+      const start = toIsraelTime(schedule.startTime);
+      const end = toIsraelTime(schedule.endTime);
+      const lessonDesc = [schedule.notes, schedule.zoomUrl && `Zoom: ${schedule.zoomUrl}`]
+        .filter(Boolean)
+        .join("\n") || null;
       calendarEvent = {
         title: `${schedule.subject} (${schedule.child.name})`,
         date: schedule.startTime.toISOString(),
-        startTime: startH,
-        endTime: endH,
-        description: schedule.notes,
+        startTime: start.time,
+        endTime: end.time,
+        description: lessonDesc,
       };
       break;
     }
@@ -104,11 +117,11 @@ export async function POST(req: NextRequest) {
       if (!playdate) {
         return NextResponse.json({ error: "Playdate not found" }, { status: 404 });
       }
-      const pdStartH = playdate.dateTime.toISOString().slice(11, 16);
+      const pdStart = toIsraelTime(playdate.dateTime);
       calendarEvent = {
-        title: `פלייגדייט - ${playdate.group.name}`,
+        title: `פליידייט - ${playdate.group.name}`,
         date: playdate.dateTime.toISOString(),
-        startTime: pdStartH,
+        startTime: pdStart.time,
         endTime: playdate.endTime,
         description: playdate.notes
           ? `${playdate.notes}\nמארח/ת: ${playdate.host.name}`
@@ -132,6 +145,19 @@ export async function POST(req: NextRequest) {
       { error: "Failed to add to Google Calendar. Please re-login to grant calendar permission." },
       { status: 500 }
     );
+  }
+
+  // Persist googleEventId back to the source record
+  switch (type) {
+    case "personal":
+      await prisma.personalEvent.update({ where: { id }, data: { googleEventId } });
+      break;
+    case "lesson":
+      await prisma.scheduleItem.update({ where: { id }, data: { googleEventId } });
+      break;
+    case "playdate":
+      await prisma.playdate.update({ where: { id }, data: { googleEventId } });
+      break;
   }
 
   return NextResponse.json({ googleEventId });

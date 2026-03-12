@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireRole } from "@/lib/auth";
+import { requireRole, teacherFilter } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import crypto from "crypto";
 
@@ -11,13 +11,13 @@ function generateCode(): string {
 
 // POST /api/groups/:id/invite — generate a group invite code
 export async function POST(_req: NextRequest, { params }: Params) {
-  const { error, session } = await requireRole("TEACHER", "ADMIN");
+  const { error, session } = await requireRole("TEACHER", "SUPERADMIN");
   if (error) return error;
 
   const { id } = await params;
 
   const group = await prisma.group.findFirst({
-    where: { id, teacherId: session.user.id },
+    where: { id, ...teacherFilter(session) },
   });
 
   if (!group) {

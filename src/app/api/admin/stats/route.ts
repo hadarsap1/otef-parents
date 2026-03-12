@@ -3,7 +3,7 @@ import { requireRole } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {
-  const { error } = await requireRole("ADMIN");
+  const { error } = await requireRole("SUPERADMIN");
   if (error) return error;
 
   const [users, children, groups, lessons] = await Promise.all([

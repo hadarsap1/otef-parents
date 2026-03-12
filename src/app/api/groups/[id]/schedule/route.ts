@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireRole } from "@/lib/auth";
+import { requireRole, teacherFilter } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 type Params = { params: Promise<{ id: string }> };
 
 // POST /api/groups/:id/schedule — push a lesson to all group members
 export async function POST(req: NextRequest, { params }: Params) {
-  const { error, session } = await requireRole("TEACHER", "ADMIN");
+  const { error, session } = await requireRole("TEACHER", "SUPERADMIN");
   if (error) return error;
 
   const { id } = await params;
@@ -16,9 +16,9 @@ export async function POST(req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "subject, startTime, endTime are required" }, { status: 400 });
   }
 
-  // Verify teacher owns this group
+  // Verify teacher owns this group (SUPERADMIN sees all)
   const group = await prisma.group.findFirst({
-    where: { id, teacherId: session.user.id },
+    where: { id, ...teacherFilter(session) },
     include: { members: { select: { childId: true } } },
   });
 

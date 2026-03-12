@@ -1,10 +1,16 @@
 "use client";
 
 import { signIn } from "next-auth/react";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Suspense } from "react";
 
-export default function LoginPage() {
+function LoginContent() {
+  const searchParams = useSearchParams();
+  const error = searchParams.get("error");
+  const callbackUrl = searchParams.get("callbackUrl");
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <Card className="w-full max-w-sm">
@@ -14,7 +20,14 @@ export default function LoginPage() {
             לוח זמנים למשפחה
           </p>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-3">
+          {error && (
+            <div className="rounded-md bg-red-50 border border-red-200 p-3 text-sm text-red-700">
+              <p className="font-medium">שגיאת התחברות</p>
+              <p className="mt-1 text-xs font-mono">Error: {error}</p>
+              {callbackUrl && <p className="mt-1 text-xs font-mono">Callback: {callbackUrl}</p>}
+            </div>
+          )}
           <Button
             onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
             className="w-full"
@@ -40,8 +53,31 @@ export default function LoginPage() {
             </svg>
             התחברות עם Google
           </Button>
+          <a
+            href="/walkthrough"
+            className="block w-full text-center rounded-lg border border-border py-2.5 text-sm font-medium text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+          >
+            סיור באפליקציה
+          </a>
+          <p className="text-center text-xs text-muted-foreground">
+            <a href="/help" className="underline hover:text-foreground">
+              מה זה לו״ז הארי?
+            </a>
+            {" · "}
+            <a href="/privacy" className="underline hover:text-foreground">
+              מדיניות פרטיות
+            </a>
+          </p>
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginContent />
+    </Suspense>
   );
 }

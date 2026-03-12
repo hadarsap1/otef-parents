@@ -15,8 +15,8 @@ export async function getGoogleAuth(userId: string) {
   }
 
   const oauth2 = new google.auth.OAuth2(
-    process.env.GOOGLE_CLIENT_ID!,
-    process.env.GOOGLE_CLIENT_SECRET!
+    process.env.GOOGLE_CLIENT_ID!.trim(),
+    process.env.GOOGLE_CLIENT_SECRET!.trim()
   );
 
   oauth2.setCredentials({
@@ -108,4 +108,27 @@ export async function addToGoogleCalendar(
   });
 
   return res.data.id || null;
+}
+
+/**
+ * Delete an event from the user's primary Google Calendar.
+ * Silently ignores errors (e.g. event already deleted).
+ */
+export async function deleteFromGoogleCalendar(
+  userId: string,
+  googleEventId: string
+): Promise<void> {
+  const auth = await getGoogleAuth(userId);
+  if (!auth) return;
+
+  const calendar = google.calendar({ version: "v3", auth });
+
+  try {
+    await calendar.events.delete({
+      calendarId: "primary",
+      eventId: googleEventId,
+    });
+  } catch {
+    // Event may already be deleted or user revoked access — ignore
+  }
 }

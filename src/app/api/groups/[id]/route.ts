@@ -1,18 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireRole } from "@/lib/auth";
+import { requireRole, teacherFilter } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 type Params = { params: Promise<{ id: string }> };
 
 // GET /api/groups/:id — get group details
 export async function GET(_req: NextRequest, { params }: Params) {
-  const { error, session } = await requireRole("TEACHER", "ADMIN");
+  const { error, session } = await requireRole("TEACHER", "SUPERADMIN");
   if (error) return error;
 
   const { id } = await params;
 
   const group = await prisma.group.findFirst({
-    where: { id, teacherId: session.user.id },
+    where: { id, ...teacherFilter(session) },
     include: {
       members: {
         include: { child: { select: { id: true, name: true, grade: true } } },
@@ -31,14 +31,14 @@ export async function GET(_req: NextRequest, { params }: Params) {
 
 // PUT /api/groups/:id — update group
 export async function PUT(req: NextRequest, { params }: Params) {
-  const { error, session } = await requireRole("TEACHER", "ADMIN");
+  const { error, session } = await requireRole("TEACHER", "SUPERADMIN");
   if (error) return error;
 
   const { id } = await params;
   const { name, description } = await req.json();
 
   const group = await prisma.group.findFirst({
-    where: { id, teacherId: session.user.id },
+    where: { id, ...teacherFilter(session) },
   });
 
   if (!group) {
@@ -58,13 +58,13 @@ export async function PUT(req: NextRequest, { params }: Params) {
 
 // DELETE /api/groups/:id — delete group
 export async function DELETE(_req: NextRequest, { params }: Params) {
-  const { error, session } = await requireRole("TEACHER", "ADMIN");
+  const { error, session } = await requireRole("TEACHER", "SUPERADMIN");
   if (error) return error;
 
   const { id } = await params;
 
   const group = await prisma.group.findFirst({
-    where: { id, teacherId: session.user.id },
+    where: { id, ...teacherFilter(session) },
   });
 
   if (!group) {

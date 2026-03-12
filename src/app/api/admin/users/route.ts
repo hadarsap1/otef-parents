@@ -3,7 +3,7 @@ import { requireRole } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {
-  const { error } = await requireRole("ADMIN");
+  const { error } = await requireRole("SUPERADMIN");
   if (error) return error;
 
   const users = await prisma.user.findMany({
@@ -17,6 +17,7 @@ export async function GET() {
       _count: {
         select: {
           children: true,
+          childParents: true,
           lessons: true,
           ownedGroups: true,
         },
@@ -29,12 +30,12 @@ export async function GET() {
 }
 
 export async function PUT(req: Request) {
-  const { error } = await requireRole("ADMIN");
+  const { error } = await requireRole("SUPERADMIN");
   if (error) return error;
 
   const { userId, role } = await req.json();
 
-  if (!userId || !["PARENT", "TEACHER", "ADMIN"].includes(role)) {
+  if (!userId || !["PARENT", "TEACHER", "SUPERADMIN"].includes(role)) {
     return NextResponse.json({ error: "Invalid input" }, { status: 400 });
   }
 

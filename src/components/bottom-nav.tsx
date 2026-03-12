@@ -33,7 +33,7 @@ export function BottomNav({ role }: { role?: string }) {
   const pathname = usePathname();
 
   const links =
-    role === "ADMIN"
+    role === "SUPERADMIN"
       ? adminLinks
       : role === "TEACHER"
         ? teacherLinks

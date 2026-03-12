@@ -53,7 +53,7 @@ export function DashboardNav({ user }: DashboardNavProps) {
               <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">{initials ?? "?"}</AvatarFallback>
             </Avatar>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-48">
+          <DropdownMenuContent align="end" className="w-48">
             <div className="flex flex-col px-1.5 py-1.5">
               <p className="text-sm font-medium">{user.name}</p>
               <p className="text-xs text-muted-foreground">{user.email}</p>

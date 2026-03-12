@@ -7,7 +7,7 @@ export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { error, session } = await requireRole("ADMIN");
+  const { error, session } = await requireRole("SUPERADMIN");
   if (error) return error;
 
   const { id } = await params;
@@ -35,7 +35,7 @@ export async function POST(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { error } = await requireRole("ADMIN");
+  const { error } = await requireRole("SUPERADMIN");
   if (error) return error;
 
   const { id } = await params;
@@ -63,6 +63,8 @@ export async function POST(
     prisma.lesson.deleteMany({ where: { teacherId: id } }),
     // Personal events
     prisma.personalEvent.deleteMany({ where: { userId: id } }),
+    // School memberships
+    prisma.schoolMember.deleteMany({ where: { userId: id } }),
   ]);
 
   return NextResponse.json({ success: true });

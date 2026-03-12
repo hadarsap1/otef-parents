@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { TeacherDashboardTabs } from "@/components/teacher-dashboard-tabs";
+import { SchoolSwitcher, CreateSchoolCard } from "@/components/school-switcher";
 
 export default async function TeacherDashboardPage() {
   const session = await getServerSession(authOptions);
@@ -11,7 +12,7 @@ export default async function TeacherDashboardPage() {
     redirect("/login");
   }
 
-  if (session.user.role !== "TEACHER" && session.user.role !== "ADMIN") {
+  if (session.user.role !== "TEACHER" && session.user.role !== "SUPERADMIN") {
     redirect("/dashboard");
   }
 
@@ -40,6 +41,11 @@ export default async function TeacherDashboardPage() {
   return (
     <div className="space-y-4">
       <h1 className="text-xl font-bold">לוח מורה</h1>
+
+      {/* School cards */}
+      <SchoolSwitcher schools={session.user.schools ?? []} />
+      <CreateSchoolCard />
+
       <TeacherDashboardTabs
         initialGroups={groups}
         initialLessons={lessons}

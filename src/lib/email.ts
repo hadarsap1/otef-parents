@@ -94,13 +94,13 @@ function buildDigestHtml(data: DailyDigestData): string {
     const items = data.playdates
       .map((pd) => {
         const time = pd.endTime ? `${pd.time}–${pd.endTime}` : pd.time;
-        return `<li style="padding:6px 0;font-size:14px;">🎈 <strong>פלייגדייט – ${pd.groupName}</strong><br>
+        return `<li style="padding:6px 0;font-size:14px;">🎈 <strong>פליידייט – ${pd.groupName}</strong><br>
           <span style="color:#64748b;font-size:13px;">🕐 ${time} | מארח/ת: ${pd.hostName}${pd.address ? ` | 📍 ${pd.address}` : ""}</span></li>`;
       })
       .join("");
 
     playdatesHtml = `
-      <h2 style="font-size:16px;color:#1e293b;margin:24px 0 8px;">🎈 פלייגדייטים</h2>
+      <h2 style="font-size:16px;color:#1e293b;margin:24px 0 8px;">🎈 פליידייטים</h2>
       <ul style="list-style:none;padding:0;margin:0;direction:rtl;">${items}</ul>`;
   }
 

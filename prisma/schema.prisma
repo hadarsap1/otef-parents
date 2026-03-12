@@ -70,12 +70,43 @@ model User {
   redeemedGroupInvites  GroupInvite[] @relation("GroupInviteRedeemer")
   lessons               Lesson[]
   personalEvents        PersonalEvent[]
+  schoolMemberships     SchoolMember[]
 }
 
 enum Role {
   PARENT
   TEACHER
-  ADMIN
+  ADMIN       // school-level admin (kept for backward compat in DB)
+  SUPERADMIN  // global admin (Hadar)
+}
+
+// ── School models ──────────────────────────────────────────────
+
+model School {
+  id          String         @id @default(cuid())
+  name        String
+  slug        String         @unique  // e.g. "ashkol"
+  description String?
+  createdAt   DateTime       @default(now())
+  members     SchoolMember[]
+  groups      Group[]
+}
+
+enum SchoolRole {
+  OWNER    // created the school
+  ADMIN    // school-level admin
+  TEACHER  // regular teacher
+}
+
+model SchoolMember {
+  id        String     @id @default(cuid())
+  schoolId  String
+  userId    String
+  role      SchoolRole @default(TEACHER)
+  createdAt DateTime   @default(now())
+  school    School     @relation(fields: [schoolId], references: [id], onDelete: Cascade)
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@unique([schoolId, userId])
 }
 
 model Child {
@@ -97,15 +128,16 @@ model Child {
 
 // ── Personal events (parent-created) ─────────────────────────
 model PersonalEvent {
-  id        String   @id @default(cuid())
-  title     String
-  date      DateTime // date of the event
-  startTime String?  // "HH:mm" optional
-  endTime   String?  // "HH:mm" optional
-  notes     String?
-  emoji     String?  // optional emoji icon
-  userId    String
-  createdAt DateTime @default(now())
+  id             String   @id @default(cuid())
+  title          String
+  date           DateTime // date of the event
+  startTime      String?  // "HH:mm" optional
+  endTime        String?  // "HH:mm" optional
+  notes          String?
+  emoji          String?  // optional emoji icon
+  userId         String
+  googleEventId  String?  // Google Calendar event ID for sync
+  createdAt      DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
@@ -154,9 +186,10 @@ model ScheduleItem {
   endTime   DateTime
   zoomUrl   String?
   notes     String?
-  childId   String
-  groupId   String?
-  createdAt DateTime @default(now())
+  childId       String
+  groupId       String?
+  googleEventId String?  // Google Calendar event ID for sync
+  createdAt     DateTime @default(now())
 
   child Child  @relation(fields: [childId], references: [id], onDelete: Cascade)
   group Group? @relation(fields: [groupId], references: [id], onDelete: SetNull)
@@ -170,9 +203,10 @@ model Playdate {
   dateTime    DateTime
   endTime     String?        // "HH:mm" optional
   maxCapacity Int
-  status      PlaydateStatus @default(OPEN)
-  notes       String?
-  createdAt   DateTime       @default(now())
+  status        PlaydateStatus @default(OPEN)
+  notes         String?
+  googleEventId String?        // Google Calendar event ID for sync
+  createdAt     DateTime       @default(now())
 
   host         User                  @relation(fields: [hostId], references: [id], onDelete: Cascade)
   group        Group                 @relation(fields: [groupId], references: [id], onDelete: Cascade)
@@ -204,9 +238,11 @@ model Group {
   name        String
   description String?
   teacherId   String
+  schoolId    String?
   createdAt   DateTime @default(now())
 
   teacher       User            @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  school        School?         @relation(fields: [schoolId], references: [id], onDelete: SetNull)
   members       GroupMember[]
   invites       GroupInvite[]
   scheduleItems ScheduleItem[]
@@ -250,10 +286,11 @@ model Lesson {
   startTime String // "HH:mm"
   endTime   String // "HH:mm"
   maxKids   Int
-  zoomLink  String?
-  teacherId String
-  groupId   String?
-  createdAt DateTime @default(now())
+  zoomLink      String?
+  teacherId     String
+  groupId       String?
+  googleEventId String?  // Google Calendar event ID for sync
+  createdAt     DateTime @default(now())
 
   teacher       User                @relation(fields: [teacherId], references: [id], onDelete: Cascade)
   group         Group?              @relation(fields: [groupId], references: [id], onDelete: SetNull)

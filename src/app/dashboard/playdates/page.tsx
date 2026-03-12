@@ -40,6 +40,7 @@ import { formatDate, formatTime } from "@/lib/format";
 import { LoadingState } from "@/components/ui/loading-state";
 import { EmptyState } from "@/components/ui/empty-state";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { AddToCalendarButton } from "@/components/add-to-calendar-button";
 
 interface Child {
   id: string;
@@ -436,6 +437,11 @@ export default function PlaydatesPage() {
                       משתתפים:{" "}
                       {pd.participants.map((p) => p.child.name).join(", ")}
                     </div>
+                  )}
+
+                  {/* Calendar button */}
+                  {(isHost || hasJoined) && (
+                    <AddToCalendarButton type="playdate" id={pd.id} compact />
                   )}
 
                   {/* Actions */}

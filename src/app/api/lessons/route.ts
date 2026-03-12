@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions, requireRole } from "@/lib/auth";
+import { authOptions, requireRole, teacherFilter } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 // GET /api/lessons — list lessons (parents see all, teachers see own)
@@ -11,10 +11,10 @@ export async function GET() {
   }
 
   const isTeacher =
-    session.user.role === "TEACHER" || session.user.role === "ADMIN";
+    session.user.role === "TEACHER" || session.user.role === "SUPERADMIN";
 
   const lessons = await prisma.lesson.findMany({
-    where: isTeacher ? { teacherId: session.user.id } : {},
+    where: isTeacher ? teacherFilter(session) : {},
     include: {
       teacher: { select: { name: true } },
       group: { select: { id: true, name: true } },
@@ -41,7 +41,7 @@ export async function GET() {
 
 // POST /api/lessons — teacher creates a lesson slot
 export async function POST(req: NextRequest) {
-  const { error, session } = await requireRole("TEACHER", "ADMIN");
+  const { error, session } = await requireRole("TEACHER", "SUPERADMIN");
   if (error) return error;
 
   const { title, day, startTime, endTime, maxKids, groupId, zoomLink } =
@@ -71,10 +71,10 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // If groupId provided, verify teacher owns it
+  // If groupId provided, verify teacher owns it (SUPERADMIN sees all)
   if (groupId) {
     const group = await prisma.group.findFirst({
-      where: { id: groupId, teacherId: session.user.id },
+      where: { id: groupId, ...teacherFilter(session) },
     });
     if (!group) {
       return NextResponse.json({ error: "Group not found" }, { status: 404 });

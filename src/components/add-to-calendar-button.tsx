@@ -39,8 +39,12 @@ export function AddToCalendarButton({
 
       setStatus("done");
       setTimeout(() => setStatus("idle"), 3000);
-    } catch {
+    } catch (err) {
       setStatus("error");
+      const msg = err instanceof Error ? err.message : "";
+      if (msg.includes("re-login")) {
+        alert("יש להתנתק ולהתחבר מחדש כדי לאפשר גישה ליומן Google.");
+      }
       setTimeout(() => setStatus("idle"), 3000);
     }
   }

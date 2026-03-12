@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { deleteFromGoogleCalendar } from "@/lib/google-calendar";
 
 // PUT /api/schedule/[id] — update a schedule item
 export async function PUT(
@@ -87,6 +88,10 @@ export async function DELETE(
 
   if (!hasAccess) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  if (existing!.googleEventId) {
+    await deleteFromGoogleCalendar(session.user.id, existing!.googleEventId);
   }
 
   await prisma.scheduleItem.delete({ where: { id } });

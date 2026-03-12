@@ -79,7 +79,7 @@ async function main() {
     create: {
       name: "מערכת",
       email: "system@otef-parents.app",
-      role: "ADMIN",
+      role: "SUPERADMIN",
     },
   });
 

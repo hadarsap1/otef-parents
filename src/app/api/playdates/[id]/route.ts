@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { deleteFromGoogleCalendar } from "@/lib/google-calendar";
 
 // DELETE /api/playdates/[id] — cancel a playdate (host only)
 export async function DELETE(
@@ -19,6 +20,10 @@ export async function DELETE(
 
   if (!playdate || playdate.hostId !== session.user.id) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  if (playdate.googleEventId) {
+    await deleteFromGoogleCalendar(session.user.id, playdate.googleEventId);
   }
 
   await prisma.playdate.update({

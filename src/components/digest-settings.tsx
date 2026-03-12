@@ -62,7 +62,7 @@ export function DigestSettingsDialog() {
         <DialogHeader>
           <DialogTitle>סיכום יומי במייל</DialogTitle>
           <DialogDescription>
-            קבלו מייל יומי עם כל השיעורים, האירועים והפלייגדייטים
+            קבלו מייל יומי עם כל השיעורים, האירועים והפליידייטים
           </DialogDescription>
         </DialogHeader>
         {loading ? (

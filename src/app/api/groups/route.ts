@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireRole } from "@/lib/auth";
+import { requireRole, teacherFilter } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 // GET /api/groups — list teacher's groups
 export async function GET() {
-  const { error, session } = await requireRole("TEACHER", "ADMIN");
+  const { error, session } = await requireRole("TEACHER", "SUPERADMIN");
   if (error) return error;
 
   const groups = await prisma.group.findMany({
-    where: { teacherId: session.user.id },
+    where: teacherFilter(session),
     include: {
       _count: { select: { members: true } },
     },
@@ -20,7 +20,7 @@ export async function GET() {
 
 // POST /api/groups — create a group
 export async function POST(req: NextRequest) {
-  const { error, session } = await requireRole("TEACHER", "ADMIN");
+  const { error, session } = await requireRole("TEACHER", "SUPERADMIN");
   if (error) return error;
 
   const { name, description } = await req.json();
