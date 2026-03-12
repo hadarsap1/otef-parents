@@ -24,6 +24,8 @@ import {
   MapPin,
   Video,
   ArrowLeft,
+  Upload,
+  ListChecks,
 } from "lucide-react";
 
 /* ------------------------------------------------------------------ */
@@ -423,6 +425,50 @@ const teacherSlides: Slide[] = [
             </div>
           </MiniCard>
           <div className="text-center text-[8px] bg-primary/10 text-primary rounded py-1 font-medium">+ קבוצה חדשה</div>
+        </div>
+      </PhoneMock>
+    ),
+  },
+  {
+    icon: Upload,
+    iconBg: "bg-amber-100 text-amber-600",
+    title: "הוספת תלמידים",
+    subtitle: "הוסיפו תלמידים ידנית או ייבאו רשימה",
+    bullets: [
+      { icon: UserPlus, text: "הוספה ידנית — בכרטיס הקבוצה, לחצו ״הוספת ילד״" },
+      { icon: Upload, text: "ייבוא רשימה — הדביקו שמות, רשימה מקובצת לפי כיתות, או CSV" },
+      { icon: ListChecks, text: "תצוגה מקדימה לבדיקה לפני אישור סופי" },
+      { text: "לאחר הייבוא, ההורים יצטרפו עם קוד הזמנה" },
+    ],
+    visual: (
+      <PhoneMock>
+        <div className="space-y-1.5">
+          <div className="font-bold text-foreground text-xs">ייבוא תלמידים</div>
+          <div className="flex gap-1 mb-1">
+            <span className="text-[9px] bg-primary text-white rounded px-2 py-0.5">רשימה</span>
+            <span className="text-[9px] bg-muted rounded px-2 py-0.5">לפי כיתה</span>
+            <span className="text-[9px] bg-muted rounded px-2 py-0.5">CSV</span>
+          </div>
+          <div className="rounded border border-dashed border-border/60 px-2 py-2 text-[9px] text-muted-foreground text-center">
+            הדביקו רשימת שמות כאן...
+          </div>
+          <div className="space-y-0.5">
+            <MiniCard highlight>
+              <div className="flex items-center gap-1.5">
+                <ListChecks className="h-2.5 w-2.5 text-primary" />
+                <span className="text-foreground font-medium">דנה כהן</span>
+                <span className="text-[8px] text-muted-foreground mr-auto">כיתה א׳</span>
+              </div>
+            </MiniCard>
+            <MiniCard>
+              <div className="flex items-center gap-1.5">
+                <ListChecks className="h-2.5 w-2.5 text-primary" />
+                <span className="text-foreground font-medium">יוסי לוי</span>
+                <span className="text-[8px] text-muted-foreground mr-auto">כיתה א׳</span>
+              </div>
+            </MiniCard>
+          </div>
+          <div className="text-center text-[9px] bg-primary text-white rounded py-1.5 font-medium">אישור ייבוא</div>
         </div>
       </PhoneMock>
     ),

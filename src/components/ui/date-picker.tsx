@@ -127,6 +127,19 @@ export function DatePicker({
 
   const displayValue = formatDisplayDate(value);
 
+  // Live preview of what's currently selected in the wheels
+  const livePreview = useMemo(() => {
+    const clampedDay = Math.min(day, daysInMonth);
+    const d = new Date(year, month, clampedDay);
+    if (isNaN(d.getTime())) return "";
+    return d.toLocaleDateString("he-IL", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  }, [year, month, day, daysInMonth]);
+
   return (
     <>
       <button
@@ -166,16 +179,24 @@ export function DatePicker({
             if (e.target === e.currentTarget) setOpen(false);
           }}
         >
-          <div className="w-full max-w-lg bg-white dark:bg-background rounded-t-2xl shadow-2xl animate-in slide-in-from-bottom duration-300 pb-[env(safe-area-inset-bottom)]">
-            {/* Header */}
-            <div className="flex items-center justify-center px-4 py-3 border-b border-border/50">
-              <span className="text-sm font-semibold">
+          <div className="w-full max-w-lg bg-white dark:bg-background rounded-t-3xl shadow-2xl animate-in slide-in-from-bottom duration-300 pb-[env(safe-area-inset-bottom)]">
+            {/* Handle bar */}
+            <div className="flex justify-center pt-3 pb-1">
+              <div className="h-1 w-10 rounded-full bg-border/60" />
+            </div>
+
+            {/* Header with live preview */}
+            <div className="px-5 pt-1 pb-3 text-center">
+              <p className="text-xs text-muted-foreground mb-0.5">
                 {label || "בחירת תאריך"}
-              </span>
+              </p>
+              <p className="text-base font-bold text-foreground">
+                {livePreview}
+              </p>
             </div>
 
             {/* Wheels */}
-            <div className="flex items-center justify-center gap-1 px-4 py-4" dir="rtl">
+            <div className="flex items-center justify-center gap-0 px-3 py-2" dir="rtl">
               <div className="flex-[1.5]">
                 <WheelColumn
                   items={days}
@@ -201,14 +222,14 @@ export function DatePicker({
               </div>
             </div>
 
-            {/* Close button */}
-            <div className="px-4 pb-4">
+            {/* Confirm button */}
+            <div className="px-5 pb-5 pt-2">
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                className="w-full rounded-xl bg-primary py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors"
+                className="w-full rounded-2xl bg-primary py-3 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm"
               >
-                סגירה
+                אישור
               </button>
             </div>
           </div>

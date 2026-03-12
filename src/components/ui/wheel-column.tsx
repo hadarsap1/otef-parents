@@ -84,12 +84,14 @@ export function WheelColumn({
 
   return (
     <div className="relative" style={{ height: PICKER_HEIGHT }}>
+      {/* Selection highlight */}
       <div
-        className="absolute inset-x-0 pointer-events-none z-10 border-y border-primary/30 bg-primary/5 rounded-lg"
+        className="absolute inset-x-1 pointer-events-none z-10 rounded-xl bg-primary/8 border border-primary/20"
         style={{ top: ITEM_HEIGHT * 2, height: ITEM_HEIGHT }}
       />
-      <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-white dark:from-background to-transparent z-20 pointer-events-none" />
-      <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-white dark:from-background to-transparent z-20 pointer-events-none" />
+      {/* Fade edges */}
+      <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-white dark:from-background via-white/80 dark:via-background/80 to-transparent z-20 pointer-events-none" />
+      <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-white dark:from-background via-white/80 dark:via-background/80 to-transparent z-20 pointer-events-none" />
 
       <div
         ref={containerRef}
@@ -104,8 +106,8 @@ export function WheelColumn({
             className={cn(
               "flex items-center justify-center transition-all duration-150 cursor-pointer select-none",
               item === selected
-                ? "text-primary font-bold text-xl"
-                : "text-muted-foreground text-base"
+                ? "text-foreground font-bold text-lg"
+                : "text-muted-foreground/60 text-sm"
             )}
             style={{ height: ITEM_HEIGHT }}
             onClick={() => {
