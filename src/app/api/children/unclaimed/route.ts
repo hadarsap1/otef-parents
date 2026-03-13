@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 const SYSTEM_EMAIL = "system@otef-parents.app";
 
 // GET /api/children/unclaimed - returns children owned by system user, grouped by group
+// School-scoped: parents only see unclaimed children from schools they're associated with
 export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
@@ -20,8 +21,37 @@ export async function GET() {
     return NextResponse.json([]);
   }
 
+  // Find which schools this parent is associated with (via their children's groups)
+  const parentSchoolIds = await prisma.group.findMany({
+    where: {
+      members: { some: { child: { OR: [
+        { parentId: session.user.id },
+        { childParents: { some: { userId: session.user.id } } },
+      ] } } },
+      schoolId: { not: null },
+    },
+    select: { schoolId: true },
+    distinct: ["schoolId"],
+  });
+
+  const schoolIds = parentSchoolIds
+    .map((g) => g.schoolId)
+    .filter((id): id is string => id !== null);
+
+  // If parent has no school associations, return empty - they need to join via invite code first
+  if (schoolIds.length === 0) {
+    return NextResponse.json([]);
+  }
+
   const children = await prisma.child.findMany({
-    where: { parentId: systemUser.id },
+    where: {
+      parentId: systemUser.id,
+      groupMemberships: {
+        some: {
+          group: { schoolId: { in: schoolIds } },
+        },
+      },
+    },
     include: {
       groupMemberships: {
         include: {

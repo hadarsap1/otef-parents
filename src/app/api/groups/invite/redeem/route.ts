@@ -53,6 +53,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Code has expired" }, { status: 400 });
   }
 
+  // Ensure group belongs to a school (defense in depth)
+  if (!invite.group.schoolId) {
+    return NextResponse.json(
+      { error: "Group not associated with a school" },
+      { status: 400 }
+    );
+  }
+
   // Check if child is already in this group
   const alreadyMember = await prisma.groupMember.findUnique({
     where: {
