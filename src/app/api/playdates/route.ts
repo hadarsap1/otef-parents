@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-// GET /api/playdates — list playdates for groups the parent's children belong to
+// GET /api/playdates - list playdates for groups the parent's children belong to
 export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
@@ -56,7 +56,7 @@ export async function GET() {
   return NextResponse.json(playdates);
 }
 
-// POST /api/playdates — create a new playdate in a group
+// POST /api/playdates - create a new playdate in a group
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {

@@ -345,7 +345,7 @@ export function PersonalEventRow({
               <span className="flex items-center gap-1">
                 <Clock className="h-3 w-3" />
                 {event.startTime}
-                {event.endTime && `–${event.endTime}`}
+                {event.endTime && `-${event.endTime}`}
               </span>
             )}
             {event.notes && (

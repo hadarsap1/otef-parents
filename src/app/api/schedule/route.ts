@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json(items);
 }
 
-// POST /api/schedule — add a schedule item
+// POST /api/schedule - add a schedule item
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {

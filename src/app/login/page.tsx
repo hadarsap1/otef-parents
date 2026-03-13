@@ -54,7 +54,7 @@ function LoginContent() {
             התחברות עם Google
           </Button>
           <p className="text-center text-xs text-muted-foreground leading-relaxed">
-            בהתחברות תתבקשו לאשר גישה ליומן Google — האפליקציה{" "}
+            בהתחברות תתבקשו לאשר גישה ליומן Google - האפליקציה{" "}
             <strong>רק מוסיפה ומוחקת</strong> אירועים שנוצרו דרכה, ולא קוראת את
             היומן הקיים.{" "}
             <a href="/privacy" className="text-primary hover:underline">

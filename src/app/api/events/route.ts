@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-// GET /api/events — list personal events for the current user
+// GET /api/events - list personal events for the current user
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json(events);
 }
 
-// POST /api/events — create a personal event
+// POST /api/events - create a personal event
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {

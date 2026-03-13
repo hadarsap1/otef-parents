@@ -13,7 +13,7 @@ function generateCode(): string {
   return code;
 }
 
-// POST /api/children/[id]/invite — generate a 6-char invite code (valid 24h)
+// POST /api/children/[id]/invite - generate a 6-char invite code (valid 24h)
 // Only the OWNER (parentId or ChildParent with OWNER role) can create invites
 export async function POST(
   _req: NextRequest,

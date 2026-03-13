@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions, requireRole, teacherFilter } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-// GET /api/lessons — list lessons
+// GET /api/lessons - list lessons
 // Parents: lessons for groups their children belong to
 // Teachers: own lessons
 export async function GET() {
@@ -60,7 +60,7 @@ export async function GET() {
   return NextResponse.json(lessons);
 }
 
-// POST /api/lessons — teacher creates a lesson (groupId required)
+// POST /api/lessons - teacher creates a lesson (groupId required)
 export async function POST(req: NextRequest) {
   const { error, session } = await requireRole("TEACHER", "SUPERADMIN");
   if (error) return error;

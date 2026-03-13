@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { google } from "googleapis";
 
-// DELETE /api/account — delete the current user's account and all data
+// DELETE /api/account - delete the current user's account and all data
 export async function DELETE() {
   const session = await getServerSession(authOptions);
   if (!session?.user) {
@@ -26,7 +26,7 @@ export async function DELETE() {
       await oauth2.revokeToken(account.access_token);
     }
   } catch {
-    // Token may already be revoked — continue with deletion
+    // Token may already be revoked - continue with deletion
   }
 
   // Delete user (cascades handle all related data)

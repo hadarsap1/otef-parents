@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-// GET /api/children — list current user's children
+// GET /api/children - list current user's children
 export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
@@ -24,7 +24,7 @@ export async function GET() {
   return NextResponse.json(children);
 }
 
-// POST /api/children — add a child
+// POST /api/children - add a child
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {

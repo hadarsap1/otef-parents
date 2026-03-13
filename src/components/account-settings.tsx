@@ -72,7 +72,7 @@ export function AccountSettings({ user, hasCalendarAccess }: AccountSettingsProp
           <CardTitle className="text-base">חיבור ליומן Google</CardTitle>
           <CardDescription>
             {hasCalendarAccess
-              ? "יומן Google מחובר — אירועים מסונכרנים אוטומטית."
+              ? "יומן Google מחובר - אירועים מסונכרנים אוטומטית."
               : "יומן Google לא מחובר. התחברו מחדש כדי לאפשר סנכרון."}
           </CardDescription>
         </CardHeader>
@@ -164,7 +164,7 @@ export function AccountSettings({ user, hasCalendarAccess }: AccountSettingsProp
             מחיקת חשבון
           </CardTitle>
           <CardDescription>
-            פעולה זו תמחק את כל המידע שלכם לצמיתות — ילדים, שיעורים, מפגשים,
+            פעולה זו תמחק את כל המידע שלכם לצמיתות - ילדים, שיעורים, מפגשים,
             ואירועים. לא ניתן לשחזר מידע שנמחק.
           </CardDescription>
         </CardHeader>

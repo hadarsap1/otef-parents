@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-// POST /api/playdates/[id]/join — join a child to a playdate
+// POST /api/playdates/[id]/join - join a child to a playdate
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -88,7 +88,7 @@ export async function POST(
   }
 }
 
-// DELETE /api/playdates/[id]/join — remove a child from a playdate
+// DELETE /api/playdates/[id]/join - remove a child from a playdate
 export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }

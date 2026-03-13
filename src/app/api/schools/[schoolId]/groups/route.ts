@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 
 type Params = { params: Promise<{ schoolId: string }> };
 
-// GET /api/schools/:schoolId/groups — list school groups
+// GET /api/schools/:schoolId/groups - list school groups
 export async function GET(_req: NextRequest, { params }: Params) {
   const { schoolId } = await params;
   const { error } = await requireSchoolRole(schoolId, "OWNER", "ADMIN", "TEACHER");

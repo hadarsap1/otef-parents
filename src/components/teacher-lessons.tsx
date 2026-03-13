@@ -270,7 +270,7 @@ export function TeacherLessons({
                       className="flex h-10 w-full rounded-xl border border-input bg-transparent px-3 py-1 text-sm"
                     >
                       {groups.length === 0 && (
-                        <option value="">אין קבוצות — צרו קבוצה קודם</option>
+                        <option value="">אין קבוצות - צרו קבוצה קודם</option>
                       )}
                       {groups.map((g) => (
                         <option key={g.id} value={g.id}>
@@ -431,7 +431,7 @@ export function TeacherLessons({
           <DialogHeader>
             <DialogTitle>עריכת שיעור</DialogTitle>
             <DialogDescription>
-              {editSlot?.group.name} — יום {editSlot ? DAYS_HE[editSlot.day] : ""}
+              {editSlot?.group.name} - יום {editSlot ? DAYS_HE[editSlot.day] : ""}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">

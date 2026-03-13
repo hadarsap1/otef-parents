@@ -56,7 +56,7 @@ export function DailyFeedWrapper() {
         </div>
       </div>
 
-      {/* Date navigation — RTL: right arrow = next day, left arrow = prev day */}
+      {/* Date navigation - RTL: right arrow = next day, left arrow = prev day */}
       <div className="flex items-center justify-between bg-muted/50 rounded-xl px-2 py-1.5">
         <Button
           variant="ghost"

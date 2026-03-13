@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { Role, SchoolRole } from "@/generated/prisma/enums";
 import { NextResponse } from "next/server";
 
-// Prisma 7.x strict mode rejects unknown fields — filter linkAccount data
+// Prisma 7.x strict mode rejects unknown fields - filter linkAccount data
 const ACCOUNT_FIELDS = new Set([
   "id", "userId", "type", "provider", "providerAccountId",
   "refresh_token", "access_token", "expires_at", "token_type",

@@ -122,7 +122,7 @@ const parentSlides: Slide[] = [
     bullets: [
       { icon: Users, text: "עברו ללשונית ״ילדים״ בתפריט התחתון" },
       { icon: Search, text: "חפשו את שם הילד/ה ברשימה לפי קבוצה" },
-      { text: "לחצו ״זה הילד/ה שלי״ — וזהו!" },
+      { text: "לחצו ״זה הילד/ה שלי״ - וזהו!" },
       { text: "יש אחים? אפשר לשייך כמה ילדים" },
     ],
     visual: (
@@ -158,7 +158,7 @@ const parentSlides: Slide[] = [
     icon: Home,
     iconBg: "bg-violet-100 text-violet-600",
     title: "העמוד הראשי",
-    subtitle: "כל מה שקורה היום — במבט אחד",
+    subtitle: "כל מה שקורה היום - במבט אחד",
     bullets: [
       { icon: Clock, text: "שיעורים של היום עם שעות וקישורי זום" },
       { icon: PartyPopper, text: "מפגשים קרובים" },
@@ -214,7 +214,7 @@ const parentSlides: Slide[] = [
             <div className="text-foreground font-medium">פליידייט - כיתה א׳</div>
             <div className="text-[9px] space-y-0.5 mt-1">
               <div className="flex items-center gap-0.5"><MapPin className="h-2 w-2" /> רח׳ הדקל 5</div>
-              <div>📅 יום שלישי 16:00–18:00</div>
+              <div>📅 יום שלישי 16:00-18:00</div>
               <div className="flex justify-between mt-1">
                 <span className="bg-green-100 text-green-700 text-[8px] px-1 rounded">פתוח · 3 מקומות</span>
                 <span className="text-primary font-bold text-[8px]">הצטרפות</span>
@@ -251,7 +251,7 @@ const parentSlides: Slide[] = [
           <MiniCard>
             <div className="flex justify-between">
               <span className="text-foreground font-medium">מתמטיקה</span>
-              <span className="text-[9px]">09:00–09:45</span>
+              <span className="text-[9px]">09:00-09:45</span>
             </div>
             <div className="flex justify-between mt-1">
               <span className="text-[8px] flex items-center gap-0.5"><Video className="h-2 w-2" /> זום</span>
@@ -261,7 +261,7 @@ const parentSlides: Slide[] = [
           <MiniCard highlight>
             <div className="flex justify-between">
               <span className="text-foreground font-medium">אנגלית</span>
-              <span className="text-[9px]">10:00–10:45</span>
+              <span className="text-[9px]">10:00-10:45</span>
             </div>
             <div className="flex justify-between mt-1">
               <span className="text-[8px] text-muted-foreground">כיתה א׳</span>
@@ -360,7 +360,7 @@ const parentSlides: Slide[] = [
       { text: "בעמוד ילדים, לחצו ״שיתוף עם הורה נוסף״" },
       { text: "קוד בן 6 תווים ייווצר (בתוקף ל-24 שעות)" },
       { text: "שלחו את הקוד להורה השני" },
-      { text: "ההורה מזין את הקוד — ורואה את אותם ילדים" },
+      { text: "ההורה מזין את הקוד - ורואה את אותם ילדים" },
     ],
     visual: (
       <PhoneMock>
@@ -435,8 +435,8 @@ const teacherSlides: Slide[] = [
     title: "הוספת תלמידים",
     subtitle: "הוסיפו תלמידים ידנית או ייבאו רשימה",
     bullets: [
-      { icon: UserPlus, text: "הוספה ידנית — בכרטיס הקבוצה, לחצו ״הוספת ילד״" },
-      { icon: Upload, text: "ייבוא רשימה — הדביקו שמות, רשימה מקובצת לפי כיתות, או CSV" },
+      { icon: UserPlus, text: "הוספה ידנית - בכרטיס הקבוצה, לחצו ״הוספת ילד״" },
+      { icon: Upload, text: "ייבוא רשימה - הדביקו שמות, רשימה מקובצת לפי כיתות, או CSV" },
       { icon: ListChecks, text: "תצוגה מקדימה לבדיקה לפני אישור סופי" },
       { text: "לאחר הייבוא, ההורים יצטרפו עם קוד הזמנה" },
     ],

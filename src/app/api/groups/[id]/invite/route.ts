@@ -9,7 +9,7 @@ function generateCode(): string {
   return crypto.randomBytes(3).toString("hex").toUpperCase().slice(0, 6);
 }
 
-// POST /api/groups/:id/invite — generate a group invite code
+// POST /api/groups/:id/invite - generate a group invite code
 export async function POST(_req: NextRequest, { params }: Params) {
   const { error, session } = await requireRole("TEACHER", "SUPERADMIN");
   if (error) return error;

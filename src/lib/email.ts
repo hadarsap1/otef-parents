@@ -52,10 +52,10 @@ function buildDigestHtml(data: DailyDigestData): string {
       .map(
         (l) =>
           `<tr>
-            <td style="padding:8px 12px;border-bottom:1px solid #eee;font-size:14px;">${l.startTime}–${l.endTime}</td>
+            <td style="padding:8px 12px;border-bottom:1px solid #eee;font-size:14px;">${l.startTime}-${l.endTime}</td>
             <td style="padding:8px 12px;border-bottom:1px solid #eee;font-size:14px;">${l.subject}</td>
             <td style="padding:8px 12px;border-bottom:1px solid #eee;font-size:14px;">${l.childName}</td>
-            <td style="padding:8px 12px;border-bottom:1px solid #eee;font-size:14px;">${l.zoomUrl ? `<a href="${l.zoomUrl}" style="color:#2563eb;">קישור</a>` : "—"}</td>
+            <td style="padding:8px 12px;border-bottom:1px solid #eee;font-size:14px;">${l.zoomUrl ? `<a href="${l.zoomUrl}" style="color:#2563eb;">קישור</a>` : "-"}</td>
           </tr>`
       )
       .join("");
@@ -78,7 +78,7 @@ function buildDigestHtml(data: DailyDigestData): string {
     const items = data.personalEvents
       .map((e) => {
         const time = e.startTime
-          ? `${e.startTime}${e.endTime ? `–${e.endTime}` : ""} `
+          ? `${e.startTime}${e.endTime ? `-${e.endTime}` : ""} `
           : "";
         return `<li style="padding:6px 0;font-size:14px;">${e.emoji || "📌"} <strong>${e.title}</strong> ${time}${e.notes ? `<br><span style="color:#64748b;font-size:13px;">${e.notes}</span>` : ""}</li>`;
       })
@@ -93,8 +93,8 @@ function buildDigestHtml(data: DailyDigestData): string {
   if (data.playdates.length > 0) {
     const items = data.playdates
       .map((pd) => {
-        const time = pd.endTime ? `${pd.time}–${pd.endTime}` : pd.time;
-        return `<li style="padding:6px 0;font-size:14px;">🎈 <strong>פליידייט – ${pd.groupName}</strong><br>
+        const time = pd.endTime ? `${pd.time}-${pd.endTime}` : pd.time;
+        return `<li style="padding:6px 0;font-size:14px;">🎈 <strong>פליידייט - ${pd.groupName}</strong><br>
           <span style="color:#64748b;font-size:13px;">🕐 ${time} | מארח/ת: ${pd.hostName}${pd.address ? ` | 📍 ${pd.address}` : ""}</span></li>`;
       })
       .join("");
@@ -138,7 +138,7 @@ export async function sendDailyDigest(
   const { error } = await resend.emails.send({
     from: "עוטף הורים <donotreplay@loz.com>",
     to,
-    subject: `📋 סיכום יומי – ${dateDisplay}`,
+    subject: `📋 סיכום יומי - ${dateDisplay}`,
     html,
   });
 

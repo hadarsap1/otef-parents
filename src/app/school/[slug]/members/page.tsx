@@ -159,7 +159,7 @@ export default function SchoolMembersPage() {
                 </Avatar>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">
-                    {member.user.name ?? "—"}
+                    {member.user.name ?? "-"}
                   </p>
                   <p className="text-xs text-muted-foreground truncate">
                     {member.user.email}

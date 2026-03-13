@@ -19,7 +19,7 @@ async function getChildAccess(childId: string, userId: string) {
   });
 }
 
-// PUT /api/children/[id] — update a child (owner or linked parent)
+// PUT /api/children/[id] - update a child (owner or linked parent)
 export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -51,7 +51,7 @@ export async function PUT(
   return NextResponse.json(child);
 }
 
-// DELETE /api/children/[id] — delete a child (only the OWNER can delete)
+// DELETE /api/children/[id] - delete a child (only the OWNER can delete)
 export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }

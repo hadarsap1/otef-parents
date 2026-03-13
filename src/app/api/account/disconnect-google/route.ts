@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { google } from "googleapis";
 
-// POST /api/account/disconnect-google — revoke Google tokens and remove calendar access
+// POST /api/account/disconnect-google - revoke Google tokens and remove calendar access
 export async function POST() {
   const session = await getServerSession(authOptions);
   if (!session?.user) {
@@ -29,7 +29,7 @@ export async function POST() {
       await oauth2.revokeToken(account.access_token);
     }
   } catch {
-    // Token may already be revoked — continue
+    // Token may already be revoked - continue
   }
 
   // Clear stored tokens (keep the account link for login)

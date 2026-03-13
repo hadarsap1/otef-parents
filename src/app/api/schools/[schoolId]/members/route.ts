@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 
 type Params = { params: Promise<{ schoolId: string }> };
 
-// GET /api/schools/:schoolId/members — list school members
+// GET /api/schools/:schoolId/members - list school members
 export async function GET(_req: NextRequest, { params }: Params) {
   const { schoolId } = await params;
   const { error } = await requireSchoolRole(schoolId, "OWNER", "ADMIN", "TEACHER");
@@ -21,7 +21,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
   return NextResponse.json(members);
 }
 
-// POST /api/schools/:schoolId/members — add a member by email
+// POST /api/schools/:schoolId/members - add a member by email
 export async function POST(req: NextRequest, { params }: Params) {
   const { schoolId } = await params;
   const { error } = await requireSchoolRole(schoolId, "OWNER", "ADMIN");
@@ -69,7 +69,7 @@ export async function POST(req: NextRequest, { params }: Params) {
   return NextResponse.json(member, { status: 201 });
 }
 
-// DELETE /api/schools/:schoolId/members — remove a member
+// DELETE /api/schools/:schoolId/members - remove a member
 export async function DELETE(req: NextRequest, { params }: Params) {
   const { schoolId } = await params;
   const { error } = await requireSchoolRole(schoolId, "OWNER", "ADMIN");

@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-// POST /api/children/invite/redeem — link current user to ALL children of the inviter
+// POST /api/children/invite/redeem - link current user to ALL children of the inviter
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Link ALL children and mark the invite as used — in a transaction
+  // Link ALL children and mark the invite as used - in a transaction
   await prisma.$transaction([
     ...childrenToLink.map((child) =>
       prisma.childParent.create({

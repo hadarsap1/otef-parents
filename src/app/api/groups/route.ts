@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireRole, teacherFilter } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-// GET /api/groups — list teacher's groups
+// GET /api/groups - list teacher's groups
 export async function GET() {
   const { error, session } = await requireRole("TEACHER", "SUPERADMIN");
   if (error) return error;
@@ -18,7 +18,7 @@ export async function GET() {
   return NextResponse.json(groups);
 }
 
-// POST /api/groups — create a group
+// POST /api/groups - create a group
 export async function POST(req: NextRequest) {
   const { error, session } = await requireRole("TEACHER", "SUPERADMIN");
   if (error) return error;

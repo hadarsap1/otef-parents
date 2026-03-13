@@ -76,7 +76,7 @@ export function TimePicker({
         style={{ height: "2.75rem" }}
       >
         <span dir="ltr" className="font-medium tabular-nums">
-          {displayValue || "—:—"}
+          {displayValue || "-:-"}
         </span>
         <svg
           className="h-4 w-4 text-muted-foreground"

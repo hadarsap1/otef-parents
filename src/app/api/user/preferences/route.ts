@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-// GET /api/user/preferences — get digest settings
+// GET /api/user/preferences - get digest settings
 export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
@@ -18,7 +18,7 @@ export async function GET() {
   return NextResponse.json(user);
 }
 
-// PUT /api/user/preferences — update digest settings
+// PUT /api/user/preferences - update digest settings
 export async function PUT(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {

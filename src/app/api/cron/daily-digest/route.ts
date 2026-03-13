@@ -4,7 +4,7 @@ import { sendDailyDigest } from "@/lib/email";
 
 export const maxDuration = 60;
 
-// POST /api/cron/daily-digest — send daily digest email to all users
+// POST /api/cron/daily-digest - send daily digest email to all users
 export async function POST(req: NextRequest) {
   const authHeader = req.headers.get("authorization");
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {

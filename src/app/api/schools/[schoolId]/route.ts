@@ -5,7 +5,7 @@ import { slugify } from "@/lib/utils";
 
 type Params = { params: Promise<{ schoolId: string }> };
 
-// GET /api/schools/:schoolId — school details
+// GET /api/schools/:schoolId - school details
 export async function GET(_req: NextRequest, { params }: Params) {
   const { schoolId } = await params;
   const { error } = await requireSchoolRole(schoolId, "OWNER", "ADMIN", "TEACHER");
@@ -25,7 +25,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
   return NextResponse.json(school);
 }
 
-// PUT /api/schools/:schoolId — update school
+// PUT /api/schools/:schoolId - update school
 export async function PUT(req: NextRequest, { params }: Params) {
   const { schoolId } = await params;
   const { error } = await requireSchoolRole(schoolId, "OWNER", "ADMIN");
@@ -57,7 +57,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
   return NextResponse.json(updated);
 }
 
-// DELETE /api/schools/:schoolId — delete school
+// DELETE /api/schools/:schoolId - delete school
 export async function DELETE(_req: NextRequest, { params }: Params) {
   const { schoolId } = await params;
   const { error } = await requireSchoolRole(schoolId, "OWNER");

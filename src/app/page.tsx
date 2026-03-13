@@ -29,7 +29,7 @@ export default async function Home() {
           לוח זמנים למשפחה
         </p>
         <p className="mt-4 mx-auto max-w-md text-sm text-muted-foreground leading-relaxed">
-          אפליקציה לניהול לוח הזמנים המשפחתי — שיעורים, מפגשים בין ילדים,
+          אפליקציה לניהול לוח הזמנים המשפחתי - שיעורים, מפגשים בין ילדים,
           סנכרון ליומן Google וסיכום יומי במייל. הכל במקום אחד, בקלות ובמהירות.
         </p>
         <div className="mt-8 flex flex-col items-center gap-3">
@@ -68,7 +68,7 @@ export default async function Home() {
         <Feature
           icon={Mail}
           title="סיכום יומי במייל"
-          description="קבלו כל בוקר מייל עם סיכום מה קורה היום — שיעורים, מפגשים ואירועים."
+          description="קבלו כל בוקר מייל עם סיכום מה קורה היום - שיעורים, מפגשים ואירועים."
         />
         <Feature
           icon={Users}
@@ -79,7 +79,7 @@ export default async function Home() {
 
       {/* Footer */}
       <footer className="border-t py-6 text-center text-xs text-muted-foreground space-y-2">
-        <p>לו״ז הארי — לוח זמנים למשפחה</p>
+        <p>לו״ז הארי - לוח זמנים למשפחה</p>
         <p>
           <Link href="/help" className="underline hover:text-foreground">
             מדריך שימוש

@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 
 const SYSTEM_EMAIL = "system@otef-parents.app";
 
-// GET /api/children/unclaimed — returns children owned by system user, grouped by group
+// GET /api/children/unclaimed - returns children owned by system user, grouped by group
 export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
@@ -55,7 +55,7 @@ export async function GET() {
   return NextResponse.json(Object.values(grouped));
 }
 
-// POST /api/children/unclaimed — claim a child (transfer from system user to current user)
+// POST /api/children/unclaimed - claim a child (transfer from system user to current user)
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {

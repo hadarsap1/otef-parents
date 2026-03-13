@@ -12,7 +12,7 @@ interface ImportChild {
 
 const MAX_IMPORT_SIZE = 500;
 
-// POST /api/schools/:schoolId/import — bulk import children
+// POST /api/schools/:schoolId/import - bulk import children
 export async function POST(req: NextRequest, { params }: Params) {
   const { schoolId } = await params;
   const { error, session } = await requireSchoolRole(schoolId, "OWNER", "ADMIN");

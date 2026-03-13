@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { addToGoogleCalendar } from "@/lib/google-calendar";
 
-// POST /api/calendar/sync — add an event/lesson/playdate to Google Calendar
+// POST /api/calendar/sync - add an event/lesson/playdate to Google Calendar
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {

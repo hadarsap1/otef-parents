@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { deleteFromGoogleCalendar } from "@/lib/google-calendar";
 
-// PUT /api/schedule/[id] — update a schedule item
+// PUT /api/schedule/[id] - update a schedule item
 export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -56,7 +56,7 @@ export async function PUT(
   return NextResponse.json(item);
 }
 
-// DELETE /api/schedule/[id] — delete a schedule item
+// DELETE /api/schedule/[id] - delete a schedule item
 export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }

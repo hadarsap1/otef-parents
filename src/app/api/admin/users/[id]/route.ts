@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireRole } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-// DELETE /api/admin/users/[id] — fully remove a user (cascades handle related data)
+// DELETE /api/admin/users/[id] - fully remove a user (cascades handle related data)
 export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -30,7 +30,7 @@ export async function DELETE(
   return NextResponse.json({ success: true });
 }
 
-// POST /api/admin/users/[id]/reset — reset user data (keep account, clear everything else)
+// POST /api/admin/users/[id]/reset - reset user data (keep account, clear everything else)
 export async function POST(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }

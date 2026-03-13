@@ -5,7 +5,7 @@ import { deleteFromGoogleCalendar } from "@/lib/google-calendar";
 
 type Params = { params: Promise<{ id: string }> };
 
-// PUT /api/lessons/:id — teacher edits a lesson
+// PUT /api/lessons/:id - teacher edits a lesson
 export async function PUT(req: NextRequest, { params }: Params) {
   const { error, session } = await requireRole("TEACHER", "SUPERADMIN");
   if (error) return error;
@@ -38,7 +38,7 @@ export async function PUT(req: NextRequest, { params }: Params) {
   return NextResponse.json(updated);
 }
 
-// DELETE /api/lessons/:id — teacher deletes a lesson
+// DELETE /api/lessons/:id - teacher deletes a lesson
 export async function DELETE(_req: NextRequest, { params }: Params) {
   const { error, session } = await requireRole("TEACHER", "SUPERADMIN");
   if (error) return error;

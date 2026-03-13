@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "תנאי שימוש — לו״ז הארי",
+  title: "תנאי שימוש - לו״ז הארי",
 };
 
 export default function TermsPage() {
@@ -34,7 +34,7 @@ export default function TermsPage() {
         <section className="space-y-3">
           <h2 className="text-xl font-semibold">תיאור השירות</h2>
           <p className="text-muted-foreground leading-relaxed">
-            &quot;לו״ז הארי&quot; היא אפליקציה לניהול לוח זמנים משפחתי — שיעורים,
+            &quot;לו״ז הארי&quot; היא אפליקציה לניהול לוח זמנים משפחתי - שיעורים,
             מפגשים, פליידייטים ואירועים אישיים. האפליקציה מאפשרת סנכרון אירועים
             ליומן Google ושיתוף לוח זמנים בין הורים ומורים.
           </p>

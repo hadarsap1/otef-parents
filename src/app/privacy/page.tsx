@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "מדיניות פרטיות — לו״ז הארי",
+  title: "מדיניות פרטיות - לו״ז הארי",
 };
 
 export default function PrivacyPage() {
@@ -25,7 +25,7 @@ export default function PrivacyPage() {
         <section className="space-y-3">
           <h2 className="text-xl font-semibold">מהי האפליקציה</h2>
           <p className="text-muted-foreground leading-relaxed">
-            &quot;לו״ז הארי&quot; היא אפליקציה לניהול לוח זמנים משפחתי — שיעורים,
+            &quot;לו״ז הארי&quot; היא אפליקציה לניהול לוח זמנים משפחתי - שיעורים,
             מפגשים, פליידייטים ואירועים אישיים. האפליקציה מיועדת להורים בקהילת
             עוטף עזה.
           </p>
@@ -36,7 +36,7 @@ export default function PrivacyPage() {
           <ul className="list-disc pr-6 space-y-2 text-muted-foreground">
             <li>
               <strong>פרטי חשבון Google:</strong> שם, כתובת אימייל ותמונת פרופיל
-              — לצורך התחברות לאפליקציה.
+              - לצורך התחברות לאפליקציה.
             </li>
             <li>
               <strong>מידע שהמשתמש מזין:</strong> שמות ילדים, שיעורים, מפגשים,

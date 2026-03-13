@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-// POST /api/groups/invite/redeem — parent joins a child to a group via invite code
+// POST /api/groups/invite/redeem - parent joins a child to a group via invite code
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {

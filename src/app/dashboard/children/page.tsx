@@ -58,7 +58,7 @@ export default function ChildrenPage() {
   const [grade, setGrade] = useState("");
   const [saving, setSaving] = useState(false);
 
-  // Share (invite) dialog state — one code for all children
+  // Share (invite) dialog state - one code for all children
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
   const [inviteCode, setInviteCode] = useState<string | null>(null);
   const [inviteExpiry, setInviteExpiry] = useState<string | null>(null);
@@ -172,7 +172,7 @@ export default function ChildrenPage() {
     if (children.length === 0) return;
     setGeneratingCode(true);
     setCopySuccess(false);
-    // Use the first child to generate the invite code — redeem links ALL children
+    // Use the first child to generate the invite code - redeem links ALL children
     const res = await fetch(`/api/children/${children[0].id}/invite`, { method: "POST" });
     if (res.ok) {
       const data = await res.json();
@@ -369,7 +369,7 @@ export default function ChildrenPage() {
         </div>
       </div>
 
-      {/* Share (invite) dialog — one code for all children */}
+      {/* Share (invite) dialog - one code for all children */}
       <Dialog open={shareDialogOpen} onOpenChange={setShareDialogOpen}>
         <DialogContent className="max-w-sm">
           <DialogHeader>

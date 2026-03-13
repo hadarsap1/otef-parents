@@ -11,7 +11,7 @@ async function requireAdmin() {
   return user;
 }
 
-// GET /api/admin/groups — returns all groups with members
+// GET /api/admin/groups - returns all groups with members
 export async function GET() {
   const admin = await requireAdmin();
   if (!admin) {
@@ -42,7 +42,7 @@ export async function GET() {
   return NextResponse.json(groups);
 }
 
-// PUT /api/admin/groups — update group name
+// PUT /api/admin/groups - update group name
 export async function PUT(req: NextRequest) {
   const admin = await requireAdmin();
   if (!admin) {
@@ -62,7 +62,7 @@ export async function PUT(req: NextRequest) {
   return NextResponse.json(group);
 }
 
-// DELETE /api/admin/groups — remove a child from a group
+// DELETE /api/admin/groups - remove a child from a group
 export async function DELETE(req: NextRequest) {
   const admin = await requireAdmin();
   if (!admin) {

@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { slugify } from "@/lib/utils";
 
-// GET /api/schools — list current user's schools
+// GET /api/schools - list current user's schools
 export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session?.user) {
@@ -37,7 +37,7 @@ export async function GET() {
   return NextResponse.json(schools);
 }
 
-// POST /api/schools — create a new school
+// POST /api/schools - create a new school
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.user) {

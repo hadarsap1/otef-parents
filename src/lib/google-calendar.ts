@@ -129,6 +129,6 @@ export async function deleteFromGoogleCalendar(
       eventId: googleEventId,
     });
   } catch {
-    // Event may already be deleted or user revoked access — ignore
+    // Event may already be deleted or user revoked access - ignore
   }
 }

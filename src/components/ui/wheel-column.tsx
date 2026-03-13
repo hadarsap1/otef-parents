@@ -33,7 +33,7 @@ export function WheelColumn({
     if (!el || isScrolling.current) return;
     const target = selectedIndex * ITEM_HEIGHT;
     if (!hasMounted.current) {
-      // First render — instant position without animation
+      // First render - instant position without animation
       el.scrollTop = target;
       hasMounted.current = true;
     } else {

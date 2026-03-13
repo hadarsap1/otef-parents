@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 
 type Params = { params: Promise<{ id: string }> };
 
-// GET /api/groups/:id/members — list group members
+// GET /api/groups/:id/members - list group members
 export async function GET(_req: NextRequest, { params }: Params) {
   const { error, session } = await requireRole("TEACHER", "SUPERADMIN");
   if (error) return error;
@@ -28,7 +28,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
   return NextResponse.json(members);
 }
 
-// DELETE /api/groups/:id/members?childId=xxx — remove a child from group
+// DELETE /api/groups/:id/members?childId=xxx - remove a child from group
 export async function DELETE(req: NextRequest, { params }: Params) {
   const { error, session } = await requireRole("TEACHER", "SUPERADMIN");
   if (error) return error;

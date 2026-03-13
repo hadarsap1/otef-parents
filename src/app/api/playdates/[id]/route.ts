@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { deleteFromGoogleCalendar } from "@/lib/google-calendar";
 
-// DELETE /api/playdates/[id] — cancel a playdate (host only)
+// DELETE /api/playdates/[id] - cancel a playdate (host only)
 export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }

@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 
 type Params = { params: Promise<{ id: string }> };
 
-// POST /api/groups/:id/schedule — push a lesson to all group members
+// POST /api/groups/:id/schedule - push a lesson to all group members
 export async function POST(req: NextRequest, { params }: Params) {
   const { error, session } = await requireRole("TEACHER", "SUPERADMIN");
   if (error) return error;

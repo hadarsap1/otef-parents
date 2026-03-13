@@ -10,7 +10,7 @@ const rubik = Rubik({
 });
 
 export const metadata: Metadata = {
-  title: "לו״ז הארי — לוח זמנים למשפחה",
+  title: "לו״ז הארי - לוח זמנים למשפחה",
   description: "ניהול שיעורים, מפגשים ואירועים למשפחה",
   manifest: "/manifest.json",
   appleWebApp: {
