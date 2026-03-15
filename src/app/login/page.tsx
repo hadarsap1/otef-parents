@@ -24,8 +24,13 @@ function LoginContent() {
           {error && (
             <div className="rounded-md bg-red-50 border border-red-200 p-3 text-sm text-red-700">
               <p className="font-medium">שגיאת התחברות</p>
-              <p className="mt-1 text-xs font-mono">Error: {error}</p>
-              {callbackUrl && <p className="mt-1 text-xs font-mono">Callback: {callbackUrl}</p>}
+              <p className="mt-1 text-xs">
+                {error === "OAuthAccountNotLinked"
+                  ? "חשבון עם כתובת המייל הזו כבר קיים. נסו להתחבר עם Google."
+                  : error === "AccessDenied"
+                    ? "הגישה נדחתה. נסו שנית."
+                    : "אירעה שגיאה בהתחברות. נסו שנית."}
+              </p>
             </div>
           )}
           <Button

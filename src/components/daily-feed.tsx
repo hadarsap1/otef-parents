@@ -14,6 +14,7 @@ import {
   Sparkles,
   Trash2,
   Pencil,
+  Loader2 as Loader,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { TimePicker } from "@/components/ui/time-picker";
@@ -146,7 +147,19 @@ function LessonRow({
 
   if (editing) {
     return (
-      <div className={cn("py-3 space-y-3", !isLast && "border-b border-dashed")}>
+      <div
+        className={cn("py-3 space-y-3", !isLast && "border-b border-dashed")}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") {
+            setSubject(item.subject);
+            setDate(new Date(item.startTime).toISOString().split("T")[0]);
+            setStartTime(new Date(item.startTime).toTimeString().slice(0, 5));
+            setEndTime(new Date(item.endTime).toTimeString().slice(0, 5));
+            setZoomUrl(item.zoomUrl || "");
+            setEditing(false);
+          }
+        }}
+      >
         <Input
           value={subject}
           onChange={(e) => setSubject(e.target.value)}
@@ -286,6 +299,7 @@ function LessonRow({
           size="icon-sm"
           className="rounded-lg hover:bg-muted"
           onClick={(e: React.MouseEvent) => { e.stopPropagation(); setEditing(true); }}
+          aria-label="עריכת שיעור"
         >
           <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
         </Button>
@@ -295,6 +309,7 @@ function LessonRow({
           className="rounded-lg hover:bg-destructive/10"
           onClick={(e: React.MouseEvent) => { e.stopPropagation(); handleDelete(); }}
           disabled={deleting}
+          aria-label="מחיקת שיעור"
         >
           <Trash2 className="h-3.5 w-3.5 text-destructive" />
         </Button>
@@ -367,6 +382,7 @@ function PlaydateRow({ item }: { item: PlaydateItem }) {
 export function DailyFeed({ date }: { date?: string }) {
   const [data, setData] = useState<FeedData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   const dateStr = date || (() => {
     const now = new Date();
@@ -378,8 +394,10 @@ export function DailyFeed({ date }: { date?: string }) {
       .then((r) => r.json())
       .then((d) => {
         setData(d);
-        setLoading(false);
-      });
+        setError(false);
+      })
+      .catch(() => setError(true))
+      .finally(() => setLoading(false));
   }, [dateStr]);
 
   // Auto-refresh every 30 seconds
@@ -387,7 +405,8 @@ export function DailyFeed({ date }: { date?: string }) {
     const interval = setInterval(() => {
       fetch(`/api/dashboard/feed?date=${dateStr}`)
         .then((r) => r.json())
-        .then((d) => setData(d));
+        .then((d) => setData(d))
+        .catch(() => {});
     }, 30_000);
     return () => clearInterval(interval);
   }, [dateStr]);
@@ -398,7 +417,8 @@ export function DailyFeed({ date }: { date?: string }) {
       if (document.visibilityState === "visible") {
         fetch(`/api/dashboard/feed?date=${dateStr}`)
           .then((r) => r.json())
-          .then((d) => setData(d));
+          .then((d) => setData(d))
+          .catch(() => {});
       }
     }
     document.addEventListener("visibilitychange", handleVisibility);
@@ -441,7 +461,26 @@ export function DailyFeed({ date }: { date?: string }) {
 
   if (loading) {
     return (
-      <p className="text-sm text-muted-foreground text-center py-4">טוען...</p>
+      <div className="flex items-center justify-center gap-2 py-4" role="status" aria-busy="true">
+        <Loader className="h-4 w-4 animate-spin text-muted-foreground" />
+        <p className="text-sm text-muted-foreground">טוען...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <CardContent className="py-6 text-center text-muted-foreground">
+          <p className="text-sm">שגיאה בטעינת הנתונים.</p>
+          <button
+            onClick={() => { setLoading(true); setError(false); }}
+            className="text-sm text-primary mt-2 hover:underline"
+          >
+            נסה שוב
+          </button>
+        </CardContent>
+      </Card>
     );
   }
 

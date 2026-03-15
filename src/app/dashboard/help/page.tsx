@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { ChevronLeft } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { HelpContent } from "@/components/help-content";
 
@@ -20,8 +20,8 @@ export default async function HelpPage() {
           href="/dashboard"
           className="text-sm text-primary flex items-center gap-1"
         >
+          <ChevronRight className="h-4 w-4" />
           חזרה
-          <ChevronLeft className="h-4 w-4" />
         </Link>
       </div>
 

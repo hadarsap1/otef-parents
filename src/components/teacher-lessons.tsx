@@ -311,7 +311,7 @@ export function TeacherLessons({
 
               <div className="space-y-1.5">
                 <Label htmlFor="lesson-zoom">
-                  <Video className="h-3.5 w-3.5 inline-block ml-1" />
+                  <Video className="h-3.5 w-3.5 inline-block me-1" />
                   קישור לזום (אופציונלי)
                 </Label>
                 <Input
@@ -356,7 +356,7 @@ export function TeacherLessons({
               <CardDescription className="text-sm">
                 {lessons.length} שיעורים
                 {group.members && group.members.length > 0 && (
-                  <span className="mr-1">
+                  <span className="ms-1">
                     · <Users className="h-3.5 w-3.5 inline-block" /> {group.members.length} ילדים
                   </span>
                 )}
@@ -402,6 +402,7 @@ export function TeacherLessons({
                         size="icon-sm"
                         className="rounded-lg hover:bg-primary/10"
                         onClick={() => openEdit(lesson)}
+                        aria-label="עריכת שיעור"
                       >
                         <Pencil className="h-3.5 w-3.5 text-primary" />
                       </Button>
@@ -410,6 +411,7 @@ export function TeacherLessons({
                         size="icon-sm"
                         className="rounded-lg hover:bg-destructive/10"
                         onClick={() => handleDeleteLesson(lesson.id)}
+                        aria-label="מחיקת שיעור"
                       >
                         <Trash2 className="h-3.5 w-3.5 text-destructive" />
                       </Button>
@@ -466,7 +468,7 @@ export function TeacherLessons({
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="edit-zoom">
-                <Video className="h-3.5 w-3.5 inline-block ml-1" />
+                <Video className="h-3.5 w-3.5 inline-block me-1" />
                 קישור לזום (אופציונלי)
               </Label>
               <Input

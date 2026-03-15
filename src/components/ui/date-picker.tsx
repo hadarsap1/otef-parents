@@ -178,6 +178,7 @@ export function DatePicker({
           onClick={(e) => {
             if (e.target === e.currentTarget) setOpen(false);
           }}
+          onKeyDown={(e) => { if (e.key === "Escape") setOpen(false); }}
         >
           <div className="w-full max-w-lg bg-white dark:bg-background rounded-t-3xl shadow-2xl animate-in slide-in-from-bottom duration-300 pb-[env(safe-area-inset-bottom)]">
             {/* Handle bar */}

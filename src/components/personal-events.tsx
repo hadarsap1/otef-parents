@@ -118,7 +118,7 @@ export function AddEventDialog({ onAdded }: { onAdded?: () => void }) {
                 key={item.title}
                 type="button"
                 onClick={() => selectQuickEvent(item)}
-                className={`text-sm px-3 py-1.5 rounded-full border transition-colors ${
+                className={`text-sm px-3 py-2.5 rounded-full border transition-colors ${
                   title === item.title && emoji === item.emoji
                     ? "bg-primary/10 border-primary/30 text-primary font-medium"
                     : "border-border/60 hover:bg-muted/50"
@@ -254,7 +254,19 @@ export function PersonalEventRow({
 
   if (editing) {
     return (
-      <div className="py-3 space-y-3">
+      <div
+        className="py-3 space-y-3"
+        onKeyDown={(e) => {
+          if (e.key === "Escape") {
+            setTitle(event.title);
+            setEmoji(event.emoji || "");
+            setStartTime(event.startTime || "");
+            setEndTime(event.endTime || "");
+            setNotes(event.notes || "");
+            setEditing(false);
+          }
+        }}
+      >
         <div className="flex flex-wrap gap-1.5">
           {QUICK_EVENTS.map((item) => (
             <button
@@ -362,6 +374,7 @@ export function PersonalEventRow({
         size="icon-sm"
         className="shrink-0 rounded-lg hover:bg-muted"
         onClick={(e: React.MouseEvent) => { e.stopPropagation(); setEditing(true); }}
+        aria-label="עריכת אירוע"
       >
         <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
       </Button>
@@ -371,6 +384,7 @@ export function PersonalEventRow({
         className="shrink-0 rounded-lg hover:bg-destructive/10"
         onClick={(e: React.MouseEvent) => { e.stopPropagation(); handleDelete(); }}
         disabled={deleting}
+        aria-label="מחיקת אירוע"
       >
         <Trash2 className="h-3.5 w-3.5 text-destructive" />
       </Button>

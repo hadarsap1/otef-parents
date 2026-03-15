@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Calendar, Check, Loader2 } from "lucide-react";
+import { Calendar, Check, Loader2, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface AddToCalendarButtonProps {
@@ -17,7 +17,7 @@ export function AddToCalendarButton({
   className,
   compact = false,
 }: AddToCalendarButtonProps) {
-  const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">(
+  const [status, setStatus] = useState<"idle" | "loading" | "done" | "error" | "relogin">(
     "idle"
   );
 
@@ -40,12 +40,9 @@ export function AddToCalendarButton({
       setStatus("done");
       setTimeout(() => setStatus("idle"), 3000);
     } catch (err) {
-      setStatus("error");
       const msg = err instanceof Error ? err.message : "";
-      if (msg.includes("re-login")) {
-        alert("יש להתנתק ולהתחבר מחדש כדי לאפשר גישה ליומן Google.");
-      }
-      setTimeout(() => setStatus("idle"), 3000);
+      setStatus(msg.includes("re-login") ? "relogin" : "error");
+      setTimeout(() => setStatus("idle"), 5000);
     }
   }
 
@@ -60,21 +57,23 @@ export function AddToCalendarButton({
         "hover:bg-primary/10 hover:text-primary hover:border-primary/30",
         "disabled:opacity-50 disabled:cursor-not-allowed",
         status === "done" && "border-green-500/30 text-green-600 bg-green-50",
-        status === "error" && "border-red-500/30 text-red-600 bg-red-50",
+        (status === "error" || status === "relogin") && "border-red-500/30 text-red-600 bg-red-50",
         className
       )}
     >
       {status === "loading" && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
       {status === "done" && <Check className="h-3.5 w-3.5" />}
       {status === "idle" && <Calendar className="h-3.5 w-3.5" />}
-      {status === "error" && <Calendar className="h-3.5 w-3.5" />}
+      {(status === "error" || status === "relogin") && <AlertCircle className="h-3.5 w-3.5" />}
       {!compact && (
         <span>
           {status === "done"
             ? "נוסף!"
-            : status === "error"
-              ? "שגיאה"
-              : "ליומן"}
+            : status === "relogin"
+              ? "יש להתחבר מחדש"
+              : status === "error"
+                ? "שגיאה"
+                : "ליומן"}
         </span>
       )}
     </button>

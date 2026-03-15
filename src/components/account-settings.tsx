@@ -124,7 +124,7 @@ export function AccountSettings({ user, hasCalendarAccess }: AccountSettingsProp
             {user.image && (
               <img
                 src={user.image}
-                alt=""
+                alt={user.name ?? "תמונת פרופיל"}
                 className="h-10 w-10 rounded-full"
               />
             )}

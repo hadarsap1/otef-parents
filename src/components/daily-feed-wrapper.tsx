@@ -63,6 +63,7 @@ export function DailyFeedWrapper() {
           size="icon-sm"
           className="rounded-lg"
           onClick={() => setDate((d) => shiftDate(d, 1))}
+          aria-label="יום הבא"
         >
           <ChevronRight className="h-4 w-4" />
         </Button>
@@ -77,6 +78,7 @@ export function DailyFeedWrapper() {
           size="icon-sm"
           className="rounded-lg"
           onClick={() => setDate((d) => shiftDate(d, -1))}
+          aria-label="יום קודם"
         >
           <ChevronLeft className="h-4 w-4" />
         </Button>

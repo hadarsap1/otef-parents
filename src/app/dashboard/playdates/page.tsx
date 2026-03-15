@@ -79,6 +79,7 @@ export default function PlaydatesPage() {
   const [children, setChildren] = useState<Child[]>([]);
   const [groups, setGroups] = useState<GroupInfo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [joinDialogPlaydate, setJoinDialogPlaydate] = useState<string | null>(
     null
@@ -102,37 +103,42 @@ export default function PlaydatesPage() {
   const [saving, setSaving] = useState(false);
 
   const fetchData = useCallback(async () => {
-    const [pRes, cRes] = await Promise.all([
-      fetch("/api/playdates"),
-      fetch("/api/children"),
-    ]);
-    const [pData, cData] = await Promise.all([pRes.json(), cRes.json()]);
-    setPlaydates(pData);
-    setChildren(cData);
-    if (cData.length > 0) setSelectedChildId(cData[0].id);
+    try {
+      const [pRes, cRes] = await Promise.all([
+        fetch("/api/playdates"),
+        fetch("/api/children"),
+      ]);
+      const [pData, cData] = await Promise.all([pRes.json(), cRes.json()]);
+      setPlaydates(pData);
+      setChildren(cData);
+      if (cData.length > 0) setSelectedChildId(cData[0].id);
 
-    // Extract unique groups from playdates
-    const groupMap = new Map<string, GroupInfo>();
-    for (const pd of pData) {
-      if (pd.group) groupMap.set(pd.group.id, pd.group);
-    }
-
-    // Also fetch groups from children's memberships
-    const gRes = await fetch("/api/parent-groups");
-    if (gRes.ok) {
-      const gData = await gRes.json();
-      for (const g of gData) {
-        groupMap.set(g.id, g);
+      // Extract unique groups from playdates
+      const groupMap = new Map<string, GroupInfo>();
+      for (const pd of pData) {
+        if (pd.group) groupMap.set(pd.group.id, pd.group);
       }
-    }
 
-    const allGroups = Array.from(groupMap.values());
-    setGroups(allGroups);
-    if (allGroups.length > 0 && !selectedGroupId) {
-      setSelectedGroupId(allGroups[0].id);
-    }
+      // Also fetch groups from children's memberships
+      const gRes = await fetch("/api/parent-groups");
+      if (gRes.ok) {
+        const gData = await gRes.json();
+        for (const g of gData) {
+          groupMap.set(g.id, g);
+        }
+      }
 
-    setLoading(false);
+      const allGroups = Array.from(groupMap.values());
+      setGroups(allGroups);
+      if (allGroups.length > 0 && !selectedGroupId) {
+        setSelectedGroupId(allGroups[0].id);
+      }
+      setError(false);
+    } catch {
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
   }, [selectedGroupId]);
 
   useEffect(() => {
@@ -227,6 +233,20 @@ export default function PlaydatesPage() {
 
   if (loading) {
     return <LoadingState />;
+  }
+
+  if (error) {
+    return (
+      <div className="py-12 text-center text-muted-foreground">
+        <p className="text-sm">שגיאה בטעינת המפגשים.</p>
+        <button
+          onClick={() => { setLoading(true); setError(false); fetchData(); }}
+          className="text-sm text-primary mt-2 hover:underline"
+        >
+          נסה שוב
+        </button>
+      </div>
+    );
   }
 
   const selectClass =

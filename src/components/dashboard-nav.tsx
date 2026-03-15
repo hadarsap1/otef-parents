@@ -60,7 +60,7 @@ export function DashboardNav({ user }: DashboardNavProps) {
             </div>
             <DigestSettingsDialog />
             <DropdownMenuItem
-              onClick={() => { window.location.href = "/dashboard/settings"; }}
+              render={<a href="/dashboard/settings" />}
             >
               <Settings className="h-4 w-4" />
               הגדרות חשבון

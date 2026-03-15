@@ -84,7 +84,7 @@ export function DigestSettingsDialog() {
               >
                 <span
                   className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    enabled ? "translate-x-1.5" : "translate-x-6"
+                    enabled ? "translate-x-6" : "translate-x-1.5"
                   }`}
                 />
               </button>
