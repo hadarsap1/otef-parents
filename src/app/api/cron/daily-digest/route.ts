@@ -6,8 +6,13 @@ export const maxDuration = 60;
 
 // POST /api/cron/daily-digest - send daily digest email to all users
 export async function POST(req: NextRequest) {
+  const cronSecret = process.env.CRON_SECRET;
+  if (!cronSecret) {
+    console.error("CRON_SECRET is not configured");
+    return NextResponse.json({ error: "Server misconfigured" }, { status: 500 });
+  }
   const authHeader = req.headers.get("authorization");
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

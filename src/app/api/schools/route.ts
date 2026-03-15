@@ -37,11 +37,16 @@ export async function GET() {
   return NextResponse.json(schools);
 }
 
-// POST /api/schools - create a new school
+// POST /api/schools - create a new school (TEACHER, ADMIN, SUPERADMIN only)
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const allowedRoles = ["TEACHER", "ADMIN", "SUPERADMIN"];
+  if (!allowedRoles.includes(session.user.role)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const { name, description } = await req.json();
@@ -74,14 +79,6 @@ export async function POST(req: NextRequest) {
       },
     },
   });
-
-  // Upgrade user to TEACHER if they're currently a PARENT
-  if (session.user.role === "PARENT") {
-    await prisma.user.update({
-      where: { id: session.user.id },
-      data: { role: "TEACHER" },
-    });
-  }
 
   return NextResponse.json(school, { status: 201 });
 }

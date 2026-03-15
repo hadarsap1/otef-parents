@@ -2,13 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import crypto from "crypto";
 
 function generateCode(): string {
-  // 6 uppercase alphanumeric characters (no ambiguous chars like 0/O, 1/I)
+  const bytes = crypto.randomBytes(4);
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let code = "";
   for (let i = 0; i < 6; i++) {
-    code += chars[Math.floor(Math.random() * chars.length)];
+    code += chars[bytes[i % bytes.length] % chars.length];
   }
   return code;
 }

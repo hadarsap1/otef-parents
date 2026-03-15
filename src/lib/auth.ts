@@ -37,7 +37,7 @@ export const authOptions: NextAuthOptions = {
           prompt: "consent",
         },
       },
-      allowDangerousEmailAccountLinking: true,
+      // allowDangerousEmailAccountLinking removed for security
     }),
   ],
   session: {

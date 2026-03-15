@@ -70,6 +70,18 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Validate zoomUrl if provided
+  if (zoomUrl) {
+    try {
+      const parsed = new URL(zoomUrl);
+      if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+        return NextResponse.json({ error: "Invalid Zoom URL" }, { status: 400 });
+      }
+    } catch {
+      return NextResponse.json({ error: "Invalid Zoom URL" }, { status: 400 });
+    }
+  }
+
   // Verify ownership (direct parent or co-parent via ChildParent)
   const child = await prisma.child.findFirst({
     where: {

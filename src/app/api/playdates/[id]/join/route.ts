@@ -36,6 +36,24 @@ export async function POST(
     return NextResponse.json({ error: "Child not found" }, { status: 404 });
   }
 
+  // Verify the child is a member of the playdate's group
+  const playdate = await prisma.playdate.findUnique({
+    where: { id },
+    select: { groupId: true },
+  });
+
+  if (!playdate) {
+    return NextResponse.json({ error: "Playdate not found" }, { status: 404 });
+  }
+
+  const groupMember = await prisma.groupMember.findUnique({
+    where: { groupId_childId: { groupId: playdate.groupId, childId } },
+  });
+
+  if (!groupMember) {
+    return NextResponse.json({ error: "Child is not a member of this group" }, { status: 403 });
+  }
+
   // Use a transaction to prevent race conditions on capacity
   try {
     await prisma.$transaction(async (tx) => {

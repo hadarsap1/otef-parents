@@ -2,6 +2,25 @@ import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY || "re_dummy");
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function sanitizeUrl(url: string): string {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol === "https:" || parsed.protocol === "http:") {
+      return parsed.href;
+    }
+  } catch {}
+  return "#";
+}
+
 interface DailyDigestData {
   userName: string;
   date: string; // "YYYY-MM-DD"
@@ -52,10 +71,10 @@ function buildDigestHtml(data: DailyDigestData): string {
       .map(
         (l) =>
           `<tr>
-            <td style="padding:8px 12px;border-bottom:1px solid #eee;font-size:14px;">${l.startTime}-${l.endTime}</td>
-            <td style="padding:8px 12px;border-bottom:1px solid #eee;font-size:14px;">${l.subject}</td>
-            <td style="padding:8px 12px;border-bottom:1px solid #eee;font-size:14px;">${l.childName}</td>
-            <td style="padding:8px 12px;border-bottom:1px solid #eee;font-size:14px;">${l.zoomUrl ? `<a href="${l.zoomUrl}" style="color:#2563eb;">קישור</a>` : "-"}</td>
+            <td style="padding:8px 12px;border-bottom:1px solid #eee;font-size:14px;">${escapeHtml(l.startTime)}-${escapeHtml(l.endTime)}</td>
+            <td style="padding:8px 12px;border-bottom:1px solid #eee;font-size:14px;">${escapeHtml(l.subject)}</td>
+            <td style="padding:8px 12px;border-bottom:1px solid #eee;font-size:14px;">${escapeHtml(l.childName)}</td>
+            <td style="padding:8px 12px;border-bottom:1px solid #eee;font-size:14px;">${l.zoomUrl ? `<a href="${sanitizeUrl(l.zoomUrl)}" style="color:#2563eb;">קישור</a>` : "-"}</td>
           </tr>`
       )
       .join("");
@@ -80,7 +99,7 @@ function buildDigestHtml(data: DailyDigestData): string {
         const time = e.startTime
           ? `${e.startTime}${e.endTime ? `-${e.endTime}` : ""} `
           : "";
-        return `<li style="padding:6px 0;font-size:14px;">${e.emoji || "📌"} <strong>${e.title}</strong> ${time}${e.notes ? `<br><span style="color:#64748b;font-size:13px;">${e.notes}</span>` : ""}</li>`;
+        return `<li style="padding:6px 0;font-size:14px;">${escapeHtml(e.emoji || "📌")} <strong>${escapeHtml(e.title)}</strong> ${time}${e.notes ? `<br><span style="color:#64748b;font-size:13px;">${escapeHtml(e.notes)}</span>` : ""}</li>`;
       })
       .join("");
 
@@ -94,8 +113,8 @@ function buildDigestHtml(data: DailyDigestData): string {
     const items = data.playdates
       .map((pd) => {
         const time = pd.endTime ? `${pd.time}-${pd.endTime}` : pd.time;
-        return `<li style="padding:6px 0;font-size:14px;">🎈 <strong>פליידייט - ${pd.groupName}</strong><br>
-          <span style="color:#64748b;font-size:13px;">🕐 ${time} | מארח/ת: ${pd.hostName}${pd.address ? ` | 📍 ${pd.address}` : ""}</span></li>`;
+        return `<li style="padding:6px 0;font-size:14px;">🎈 <strong>פליידייט - ${escapeHtml(pd.groupName)}</strong><br>
+          <span style="color:#64748b;font-size:13px;">🕐 ${time} | מארח/ת: ${escapeHtml(pd.hostName)}${pd.address ? ` | 📍 ${escapeHtml(pd.address)}` : ""}</span></li>`;
       })
       .join("");
 
@@ -111,7 +130,7 @@ function buildDigestHtml(data: DailyDigestData): string {
 <body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f8fafc;margin:0;padding:0;">
   <div style="max-width:600px;margin:0 auto;background:#ffffff;border-radius:12px;overflow:hidden;margin-top:20px;margin-bottom:20px;box-shadow:0 1px 3px rgba(0,0,0,0.1);">
     <div style="background:linear-gradient(135deg,#3b82f6,#6366f1);padding:24px 32px;">
-      <h1 style="color:#fff;font-size:20px;margin:0;">☀️ בוקר טוב, ${data.userName}!</h1>
+      <h1 style="color:#fff;font-size:20px;margin:0;">☀️ בוקר טוב, ${escapeHtml(data.userName)}!</h1>
       <p style="color:rgba(255,255,255,0.85);font-size:14px;margin:8px 0 0;">${dateDisplay}</p>
     </div>
     <div style="padding:16px 32px 32px;">
