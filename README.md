@@ -209,6 +209,42 @@ Tests cover: login page, auth redirects, API protection, PWA manifest, RTL layou
 
 **Config:** Chromium, `he-IL` locale, `Asia/Jerusalem` timezone, port 3002.
 
+## Security
+
+### Authentication & Authorization
+- **Google OAuth** via NextAuth.js with database-backed sessions (not JWT)
+- **Centralized middleware** (`src/middleware.ts`) protects all `/dashboard/*` and `/api/*` routes — defense-in-depth on top of per-route auth checks
+- **Role-based access control** — four roles (`PARENT`, `TEACHER`, `ADMIN`, `SUPERADMIN`) enforced via `requireRole()` and `requireSchoolRole()` helpers
+- School creation restricted to `TEACHER` and above — parents cannot self-elevate
+
+### Data Protection
+- **HTML escaping** on all user-controlled content in email templates (prevents XSS/phishing injection)
+- **URL validation** — Zoom links and other URLs are validated as `http(s)://` before storage and rendering
+- **User-scoped queries** — all database queries filter by the authenticated user's ID
+- **No raw SQL** — all data access via Prisma's typed query builder
+
+### Invite Codes
+- **Cryptographically secure** — generated with `crypto.randomBytes()`, not `Math.random()`
+- 6-character codes with 24-hour expiry, single-use for child invites
+
+### HTTP Security Headers
+Configured in `next.config.ts`:
+- `Strict-Transport-Security` (HSTS with preload)
+- `X-Content-Type-Options: nosniff`
+- `X-Frame-Options: DENY`
+- `Referrer-Policy: strict-origin-when-cross-origin`
+- `Permissions-Policy` (camera, microphone, geolocation disabled)
+
+### Cron Job Protection
+- `/api/cron/daily-digest` requires a `Bearer` token matching `CRON_SECRET`
+- Fails with 500 if `CRON_SECRET` is not configured (prevents `Bearer undefined` bypass)
+
+### Secrets Management
+- All secrets via environment variables — never hardcoded
+- `.env*` files excluded in `.gitignore`
+- Generate secrets with: `openssl rand -base64 32`
+- No `NEXT_PUBLIC_` prefix on any secret
+
 ## Deployment
 
 Deployed on **Vercel**. The build command runs Prisma generate before Next.js build:
