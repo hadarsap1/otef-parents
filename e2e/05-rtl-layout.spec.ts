@@ -9,13 +9,13 @@ test.describe("RTL Layout Verification", () => {
     await expect(html).toHaveAttribute("lang", "he");
   });
 
-  test("body uses Heebo font variable", async ({ page }) => {
+  test("body uses Rubik font variable", async ({ page }) => {
     await page.goto("/login");
 
     const body = page.locator("body");
     const className = await body.getAttribute("class");
-    // Turbopack hashes class names; check for "heebo" substring
-    expect(className?.toLowerCase()).toContain("heebo");
+    // Turbopack hashes class names; check for "rubik" substring
+    expect(className?.toLowerCase()).toContain("rubik");
   });
 
   test("login card is centered on mobile", async ({ page }) => {

@@ -16,7 +16,7 @@ test.describe("Accessibility — Login Page", () => {
     await page.goto("/login");
 
     // Shadcn v5 CardTitle uses div, not h* tags — check for role="heading" or text hierarchy
-    const title = page.getByText("Otef Parents");
+    const title = page.getByText("לו״ז הארי", { exact: true });
     await expect(title).toBeVisible();
   });
 
@@ -46,10 +46,10 @@ test.describe("Accessibility — Login Page", () => {
     await page.goto("/login");
 
     // Verify text elements are actually rendered and visible
-    const title = page.getByText("Otef Parents");
+    const title = page.getByText("לו״ז הארי", { exact: true });
     await expect(title).toBeVisible();
 
-    const subtitle = page.getByText("ניהול לוח זמנים למשפחות בעורף");
+    const subtitle = page.getByText("לוח זמנים למשפחה");
     await expect(subtitle).toBeVisible();
   });
 });

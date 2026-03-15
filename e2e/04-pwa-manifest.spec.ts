@@ -6,8 +6,8 @@ test.describe("PWA & Metadata", () => {
     expect(res.status()).toBe(200);
 
     const manifest = await res.json();
-    expect(manifest.name).toBe("Otef Parents");
-    expect(manifest.short_name).toBe("Otef");
+    expect(manifest.name).toBe("לו״ז הארי");
+    expect(manifest.short_name).toBe("לו״ז הארי");
     expect(manifest.dir).toBe("rtl");
     expect(manifest.lang).toBe("he");
     expect(manifest.display).toBe("standalone");
@@ -44,7 +44,7 @@ test.describe("PWA & Metadata", () => {
     } else {
       // Verify apple-web-app title is set via apple-mobile-web-app-title
       const titleMeta = page.locator('meta[name="apple-mobile-web-app-title"]');
-      await expect(titleMeta).toHaveAttribute("content", "Otef Parents");
+      await expect(titleMeta).toHaveAttribute("content", "לו״ז הארי");
     }
   });
 });

@@ -4,11 +4,11 @@ test.describe("Login Page", () => {
   test("renders login page with Hebrew text and Google button", async ({ page }) => {
     await page.goto("/login");
 
-    // Check page title (Shadcn v5 CardTitle may not use h* tags)
-    await expect(page.getByText("Otef Parents")).toBeVisible();
+    // Check page title (Hebrew app name)
+    await expect(page.getByText("לו״ז הארי", { exact: true })).toBeVisible();
 
     // Check Hebrew subtitle
-    await expect(page.getByText("ניהול לוח זמנים למשפחות בעורף")).toBeVisible();
+    await expect(page.getByText("לוח זמנים למשפחה")).toBeVisible();
 
     // Check Google login button exists
     await expect(page.getByText("התחברות עם Google")).toBeVisible();

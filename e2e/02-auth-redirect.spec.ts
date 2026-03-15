@@ -1,10 +1,9 @@
 import { test, expect } from "@playwright/test";
 
 test.describe("Auth Redirects (unauthenticated)", () => {
-  test("/ redirects to /login", async ({ page }) => {
-    await page.goto("/");
-    await page.waitForURL("**/login**");
-    expect(page.url()).toContain("/login");
+  test("/ is accessible (public landing)", async ({ page }) => {
+    const res = await page.goto("/");
+    expect(res?.status()).toBe(200);
   });
 
   test("/dashboard redirects to /login", async ({ page }) => {
