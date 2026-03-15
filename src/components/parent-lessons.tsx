@@ -92,6 +92,7 @@ export function ParentLessons({
               onClick={() => toggleGroup(group.id)}
               role="button"
               tabIndex={0}
+              aria-expanded={isOpen}
               onKeyDown={(e) => {
                 if (e.key === "Enter" || e.key === " ") toggleGroup(group.id);
               }}

@@ -98,11 +98,27 @@ export function WheelColumn({
         className="h-full overflow-y-auto scrollbar-hide overscroll-contain"
         style={{ WebkitOverflowScrolling: "touch" }}
         onScroll={handleScroll}
+        role="listbox"
+        tabIndex={0}
+        aria-activedescendant={`wheel-item-${selected}`}
+        onKeyDown={(e) => {
+          const idx = items.indexOf(selected);
+          if (e.key === "ArrowDown" && idx < items.length - 1) {
+            e.preventDefault();
+            onSelect(items[idx + 1]);
+          } else if (e.key === "ArrowUp" && idx > 0) {
+            e.preventDefault();
+            onSelect(items[idx - 1]);
+          }
+        }}
       >
         <div style={{ height: ITEM_HEIGHT * 2 }} />
         {items.map((item, i) => (
           <div
             key={item}
+            id={`wheel-item-${item}`}
+            role="option"
+            aria-selected={item === selected}
             className={cn(
               "flex items-center justify-center transition-all duration-150 cursor-pointer select-none",
               item === selected

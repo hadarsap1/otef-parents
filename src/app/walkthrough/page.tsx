@@ -23,7 +23,7 @@ import {
   BookOpen,
   MapPin,
   Video,
-  ArrowLeft,
+  ArrowRight,
   Upload,
   ListChecks,
 } from "lucide-react";
@@ -562,7 +562,7 @@ export default function WalkthroughPage() {
             href="/login"
             className="inline-block text-sm text-muted-foreground hover:underline"
           >
-            &larr; חזרה להתחברות
+            &rarr; חזרה להתחברות
           </a>
         </div>
       </div>
@@ -577,7 +577,7 @@ export default function WalkthroughPage() {
           onClick={() => { setTrack(null); setStep(0); }}
           className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1"
         >
-          <ArrowLeft className="h-4 w-4" />
+          <ArrowRight className="h-4 w-4" />
           {track === "teachers" ? "מורים" : "הורים"}
         </button>
         <div className="flex items-center gap-1.5">
@@ -585,13 +585,15 @@ export default function WalkthroughPage() {
             <button
               key={i}
               onClick={() => setStep(i)}
+              aria-label={`שקופית ${i + 1} מתוך ${slides.length}`}
+              aria-current={i === step ? "step" : undefined}
               className={`h-2 rounded-full transition-all ${
                 i === step ? "w-6 bg-primary" : "w-2 bg-border hover:bg-primary/30"
               }`}
             />
           ))}
         </div>
-        <span className="text-xs text-muted-foreground w-12 text-left">
+        <span className="text-xs text-muted-foreground w-12 text-end">
           {step + 1}/{slides.length}
         </span>
       </div>

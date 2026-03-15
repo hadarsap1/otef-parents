@@ -22,9 +22,8 @@ const teacherLinks = [
 
 const adminLinks = [
   { href: "/dashboard", label: "ראשי", icon: Home },
-  { href: "/dashboard/teacher", label: "מורה", icon: UsersRound },
   { href: "/dashboard/admin", label: "ניהול", icon: Shield },
-  { href: "/dashboard/lessons", label: "שיעורים", icon: Clock },
+  { href: "/dashboard/teacher", label: "מורה", icon: UsersRound },
   { href: "/dashboard/children", label: "ילדים", icon: Users },
   { href: "/dashboard/playdates", label: "מפגשים", icon: PartyPopper },
 ];

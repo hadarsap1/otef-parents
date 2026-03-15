@@ -9,6 +9,16 @@ import {
   CardDescription,
   CardContent,
 } from "@/components/ui/card";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog";
 import { AddToCalendarButton } from "@/components/add-to-calendar-button";
 
 interface ScheduleItemData {
@@ -37,6 +47,7 @@ function formatDate(iso: string) {
 
 export function PersonalLessons({ items }: { items: ScheduleItemData[] }) {
   const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const visibleItems = items.filter((i) => !deletedIds.has(i.id));
 
@@ -121,7 +132,7 @@ export function PersonalLessons({ items }: { items: ScheduleItemData[] }) {
                 )}
                 <AddToCalendarButton type="lesson" id={item.id} compact />
                 <button
-                  onClick={() => handleDelete(item.id)}
+                  onClick={() => setConfirmDeleteId(item.id)}
                   className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-destructive/10 transition-colors"
                   title="מחיקה"
                   aria-label="מחיקת שיעור"
@@ -133,6 +144,32 @@ export function PersonalLessons({ items }: { items: ScheduleItemData[] }) {
           ))}
         </div>
       </CardContent>
+
+      <AlertDialog
+        open={!!confirmDeleteId}
+        onOpenChange={(open) => !open && setConfirmDeleteId(null)}
+      >
+        <AlertDialogContent size="sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle>מחיקת שיעור</AlertDialogTitle>
+            <AlertDialogDescription>
+              האם למחוק את השיעור? הפעולה לא ניתנת לביטול.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>ביטול</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={() => {
+                if (confirmDeleteId) handleDelete(confirmDeleteId);
+                setConfirmDeleteId(null);
+              }}
+            >
+              מחיקה
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }

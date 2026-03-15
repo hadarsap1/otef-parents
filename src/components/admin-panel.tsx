@@ -493,7 +493,8 @@ export function AdminPanel() {
                     value={user.role}
                     onChange={(e) => changeRole(user.id, e.target.value)}
                     disabled={updatingId === user.id}
-                    className={`text-xs font-medium px-2 py-1 rounded-full border-0 cursor-pointer ${
+                    aria-label={`תפקיד של ${user.name}`}
+                    className={`text-xs font-medium px-2 py-1 rounded-full border-0 cursor-pointer focus:ring-2 focus:ring-ring focus:ring-offset-1 ${
                       ROLE_COLORS[user.role] ?? ""
                     }`}
                   >
@@ -507,6 +508,7 @@ export function AdminPanel() {
                     size="icon-sm"
                     className="rounded-lg hover:bg-amber-100"
                     title="איפוס נתונים"
+                    aria-label="איפוס נתונים"
                     onClick={() =>
                       setConfirmDialog({ type: "reset", user })
                     }
@@ -519,6 +521,7 @@ export function AdminPanel() {
                     size="icon-sm"
                     className="rounded-lg hover:bg-destructive/10"
                     title="מחיקת משתמש"
+                    aria-label="מחיקת משתמש"
                     onClick={() =>
                       setConfirmDialog({ type: "delete", user })
                     }

@@ -17,6 +17,16 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+  AlertDialogAction,
+} from "@/components/ui/alert-dialog";
 
 interface Group {
   id: string;
@@ -206,6 +216,7 @@ export function TeacherGroups({ initialGroups }: { initialGroups: Group[] }) {
                     size="icon-sm"
                     className="rounded-lg hover:bg-primary/10"
                     onClick={() => openEdit(group)}
+                    aria-label="עריכת קבוצה"
                   >
                     <Pencil className="h-3.5 w-3.5 text-primary" />
                   </Button>
@@ -214,6 +225,7 @@ export function TeacherGroups({ initialGroups }: { initialGroups: Group[] }) {
                     size="icon-sm"
                     className="rounded-lg hover:bg-destructive/10"
                     onClick={() => setDeleteGroup(group)}
+                    aria-label="מחיקת קבוצה"
                   >
                     <Trash2 className="h-3.5 w-3.5 text-destructive" />
                   </Button>
@@ -314,40 +326,33 @@ export function TeacherGroups({ initialGroups }: { initialGroups: Group[] }) {
       </Dialog>
 
       {/* Delete group confirmation dialog */}
-      <Dialog
+      <AlertDialog
         open={!!deleteGroup}
         onOpenChange={(open) => !open && setDeleteGroup(null)}
       >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>מחיקת קבוצה</DialogTitle>
-            <DialogDescription>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>מחיקת קבוצה</AlertDialogTitle>
+            <AlertDialogDescription>
               האם למחוק את הקבוצה <strong>{deleteGroup?.name}</strong>?
               {deleteGroup && deleteGroup._count.members > 0 && (
                 <> הקבוצה כוללת {deleteGroup._count.members} תלמידים שיוסרו ממנה.</>
               )}
               {" "}פעולה זו אינה ניתנת לביטול.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="gap-2">
-            <Button
-              variant="outline"
-              className="rounded-xl"
-              onClick={() => setDeleteGroup(null)}
-            >
-              ביטול
-            </Button>
-            <Button
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>ביטול</AlertDialogCancel>
+            <AlertDialogAction
               variant="destructive"
-              className="rounded-xl"
               onClick={handleDelete}
               disabled={deleteLoading}
             >
               {deleteLoading ? "מוחק..." : "מחיקה"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
