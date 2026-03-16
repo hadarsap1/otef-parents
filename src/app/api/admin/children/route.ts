@@ -23,11 +23,14 @@ export async function GET(req: NextRequest) {
   const excludeGroupId = searchParams.get("excludeGroupId");
   const parentId = searchParams.get("parentId");
 
-  // If parentId provided, return all children for that parent
+  // If parentId provided, return all children for that parent (primary + linked via childParents)
   if (parentId) {
     const children = await prisma.child.findMany({
       where: {
-        parentId,
+        OR: [
+          { parentId },
+          { childParents: { some: { userId: parentId } } },
+        ],
         ...(excludeGroupId
           ? { groupMemberships: { none: { groupId: excludeGroupId } } }
           : {}),
