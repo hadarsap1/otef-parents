@@ -3,7 +3,6 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { TeacherLessons } from "@/components/teacher-lessons";
-import { SchoolSwitcher, CreateSchoolCard } from "@/components/school-switcher";
 
 export default async function TeacherDashboardPage() {
   const session = await getServerSession(authOptions);
@@ -16,45 +15,83 @@ export default async function TeacherDashboardPage() {
     redirect("/dashboard");
   }
 
-  const [groups, lessons] = await Promise.all([
-    prisma.group.findMany({
-      where: { teacherId: session.user.id },
-      include: {
-        members: { select: { child: { select: { id: true, name: true } } } },
-      },
-      orderBy: { createdAt: "desc" },
-    }),
-    prisma.lesson.findMany({
-      where: { teacherId: session.user.id },
-      include: {
-        group: {
-          select: {
-            id: true,
-            name: true,
-            members: { select: { child: { select: { id: true, name: true } } } },
+  const isSuperAdmin = session.user.role === "SUPERADMIN";
+
+  // Get schools the teacher belongs to (SUPERADMIN sees all)
+  const schools = isSuperAdmin
+    ? await prisma.school.findMany({
+        select: {
+          id: true,
+          name: true,
+          groups: {
+            select: {
+              id: true,
+              name: true,
+              members: { select: { child: { select: { id: true, name: true } } } },
+            },
+            orderBy: { name: "asc" },
           },
         },
-        subGroups: {
-          include: {
-            members: { include: { child: { select: { id: true, name: true } } } },
+        orderBy: { name: "asc" },
+      })
+    : await prisma.school.findMany({
+        where: {
+          members: { some: { userId: session.user.id } },
+        },
+        select: {
+          id: true,
+          name: true,
+          groups: {
+            where: { teacherId: session.user.id },
+            select: {
+              id: true,
+              name: true,
+              members: { select: { child: { select: { id: true, name: true } } } },
+            },
+            orderBy: { name: "asc" },
           },
         },
+        orderBy: { name: "asc" },
+      });
+
+  // Flatten all groups for TeacherLessons (with school context)
+  const allGroups = schools.flatMap((s) =>
+    s.groups.map((g) => ({
+      id: g.id,
+      name: g.name,
+      schoolName: s.name,
+      members: g.members,
+    }))
+  );
+
+  const lessons = await prisma.lesson.findMany({
+    where: isSuperAdmin ? {} : { teacherId: session.user.id },
+    include: {
+      group: {
+        select: {
+          id: true,
+          name: true,
+          school: { select: { name: true } },
+          members: { select: { child: { select: { id: true, name: true } } } },
+        },
       },
-      orderBy: [{ date: "asc" }, { startTime: "asc" }],
-    }),
-  ]);
+      subGroups: {
+        include: {
+          members: { include: { child: { select: { id: true, name: true } } } },
+        },
+      },
+    },
+    orderBy: [{ date: "asc" }, { startTime: "asc" }],
+  });
 
   return (
     <div className="space-y-4">
       <h1 className="text-xl font-bold">לוח מורה</h1>
 
-      {/* School cards */}
-      <SchoolSwitcher schools={session.user.schools ?? []} />
-      <CreateSchoolCard />
-
       <TeacherLessons
         initialLessons={lessons}
-        groups={groups.map((g) => ({ id: g.id, name: g.name, members: g.members }))}
+        groups={allGroups}
+        schools={schools.map((s) => ({ id: s.id, name: s.name }))}
       />
     </div>
   );

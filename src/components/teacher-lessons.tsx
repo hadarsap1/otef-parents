@@ -28,9 +28,15 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
+interface SchoolOption {
+  id: string;
+  name: string;
+}
+
 interface Group {
   id: string;
   name: string;
+  schoolName?: string;
   members?: { child: { id: string; name: string } }[];
 }
 
@@ -54,7 +60,7 @@ interface Lesson {
   recurrence: string;
   hasSubGroups: boolean;
   groupId: string | null;
-  group: { id: string; name: string; members?: { child: { id: string; name: string } }[] } | null;
+  group: { id: string; name: string; school?: { name: string } | null; members?: { child: { id: string; name: string } }[] } | null;
   subGroups?: SubGroup[];
 }
 
@@ -80,9 +86,11 @@ const RECURRENCE_OPTIONS = [
 export function TeacherLessons({
   initialLessons,
   groups,
+  schools = [],
 }: {
   initialLessons: Lesson[];
   groups: Group[];
+  schools?: SchoolOption[];
 }) {
   const router = useRouter();
   const [createOpen, setCreateOpen] = useState(false);
@@ -100,6 +108,7 @@ export function TeacherLessons({
   });
   const [startTime, setStartTime] = useState("13:00");
   const [endTime, setEndTime] = useState("13:30");
+  const [schoolId, setSchoolId] = useState(schools[0]?.id ?? "");
   const [groupId, setGroupId] = useState("");
   const [zoomLink, setZoomLink] = useState("");
   const [notes, setNotes] = useState("");
@@ -133,6 +142,7 @@ export function TeacherLessons({
     setDate(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`);
     setStartTime("13:00");
     setEndTime("13:30");
+    setSchoolId(schools[0]?.id ?? "");
     setGroupId("");
     setZoomLink("");
     setNotes("");
@@ -170,6 +180,12 @@ export function TeacherLessons({
       })
     );
   }
+
+  // Filter groups by selected school
+  const selectedSchool = schools.find((s) => s.id === schoolId);
+  const filteredGroups = schoolId
+    ? groups.filter((g) => g.schoolName === selectedSchool?.name)
+    : groups;
 
   // Get roster for selected group
   const selectedGroup = groups.find((g) => g.id === groupId);
@@ -312,21 +328,49 @@ export function TeacherLessons({
                 />
               </div>
 
+              {/* School selector */}
+              {schools.length > 0 && (
+                <div className="space-y-1.5">
+                  <Label htmlFor="lesson-school">בית ספר</Label>
+                  <select
+                    id="lesson-school"
+                    value={schoolId}
+                    onChange={(e) => {
+                      setSchoolId(e.target.value);
+                      setGroupId(""); // reset class when school changes
+                    }}
+                    dir="rtl"
+                    className="flex h-11 w-full rounded-xl border border-input bg-transparent px-3 py-1 text-sm"
+                  >
+                    {schools.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {s.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Class selector */}
               <div className="space-y-1.5">
                 <Label htmlFor="lesson-group">כיתה (אופציונלי)</Label>
                 <select
                   id="lesson-group"
                   value={groupId}
                   onChange={(e) => setGroupId(e.target.value)}
+                  dir="rtl"
                   className="flex h-11 w-full rounded-xl border border-input bg-transparent px-3 py-1 text-sm"
                 >
                   <option value="">ללא כיתה</option>
-                  {groups.map((g) => (
+                  {filteredGroups.map((g) => (
                     <option key={g.id} value={g.id}>
                       {g.name}
                     </option>
                   ))}
                 </select>
+                {filteredGroups.length === 0 && schoolId && (
+                  <p className="text-xs text-muted-foreground">אין כיתות בבית הספר הנבחר</p>
+                )}
               </div>
 
               <div className="space-y-1.5">
