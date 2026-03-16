@@ -120,6 +120,8 @@ export function AdminPanel() {
       setGroups(groupsData);
       setSchools(schoolsData);
       setLoading(false);
+    }).catch(() => {
+      setLoading(false);
     });
   }, []);
 
@@ -225,6 +227,7 @@ export function AdminPanel() {
             : u
         )
       );
+      setGroups((prev) => prev.filter((g) => g.teacher.id !== userId));
       const statsData = await fetch("/api/admin/stats").then((r) => r.json());
       setStats(statsData);
     }
@@ -239,6 +242,18 @@ export function AdminPanel() {
     });
     if (res.ok) {
       setUsers((prev) => prev.filter((u) => u.id !== userId));
+      setGroups((prev) =>
+        prev
+          .filter((g) => g.teacher.id !== userId)
+          .map((g) => ({
+            ...g,
+            members: g.members.filter((m) => m.child.parent.id !== userId),
+            _count: {
+              ...g._count,
+              members: g.members.filter((m) => m.child.parent.id !== userId).length,
+            },
+          }))
+      );
       const statsData = await fetch("/api/admin/stats").then((r) => r.json());
       setStats(statsData);
     }
@@ -259,8 +274,8 @@ export function AdminPanel() {
           g.id === groupId ? { ...g, name: editGroupName.trim() } : g
         )
       );
+      setEditingGroup(null);
     }
-    setEditingGroup(null);
   }
 
   async function removeMember(groupId: string, childId: string) {
@@ -293,13 +308,14 @@ export function AdminPanel() {
       body: JSON.stringify({ name: editSchoolName.trim() }),
     });
     if (res.ok) {
+      const updated = await res.json();
       setSchools((prev) =>
         prev.map((s) =>
-          s.id === schoolId ? { ...s, name: editSchoolName.trim() } : s
+          s.id === schoolId ? { ...s, name: updated.name, slug: updated.slug } : s
         )
       );
+      setEditingSchool(null);
     }
-    setEditingSchool(null);
   }
 
   async function handleDeleteSchool(schoolId: string) {
@@ -307,6 +323,15 @@ export function AdminPanel() {
     const res = await fetch(`/api/schools/${schoolId}`, { method: "DELETE" });
     if (res.ok) {
       setSchools((prev) => prev.filter((s) => s.id !== schoolId));
+      setUsers((prev) =>
+        prev.map((u) => ({
+          ...u,
+          schoolMemberships: u.schoolMemberships.filter((m) => m.school.id !== schoolId),
+        }))
+      );
+      setGroups((prev) =>
+        prev.map((g) => (g.school?.id === schoolId ? { ...g, school: null } : g))
+      );
     }
     setDeletingSchool(false);
     setDeleteSchoolDialog(null);
@@ -334,7 +359,7 @@ export function AdminPanel() {
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="pr-9"
-          dir="rtl"
+          dir="auto"
         />
       </div>
 
@@ -388,7 +413,7 @@ export function AdminPanel() {
                         </Button>
                       </div>
                     ) : (
-                      <div className="flex items-center gap-2 cursor-pointer" onClick={() => toggleSchool(school.id)}>
+                      <div className="flex items-center gap-2 cursor-pointer" role="button" tabIndex={0} aria-expanded={isExpanded} onClick={() => toggleSchool(school.id)} onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), toggleSchool(school.id))}>
                         {isExpanded ? (
                           <ChevronUp className="h-4 w-4 text-muted-foreground shrink-0" />
                         ) : (
@@ -412,6 +437,7 @@ export function AdminPanel() {
                       <Button
                         variant="ghost"
                         size="icon"
+                        aria-label={`עריכת שם ${school.name}`}
                         onClick={() => {
                           setEditingSchool(school.id);
                           setEditSchoolName(school.name);
@@ -423,6 +449,7 @@ export function AdminPanel() {
                         variant="ghost"
                         size="icon"
                         className="hover:bg-destructive/10"
+                        aria-label={`מחיקת ${school.name}`}
                         onClick={() => setDeleteSchoolDialog({ id: school.id, name: school.name })}
                       >
                         <Trash2 className="h-4 w-4 text-destructive" />
@@ -465,7 +492,7 @@ export function AdminPanel() {
                                 onChange={(e) => changeRole(teacher.id, e.target.value)}
                                 disabled={updatingId === teacher.id}
                                 dir="rtl"
-                                aria-label={`תפקיד של ${teacher.name}`}
+                                aria-label={`תפקיד של ${teacher.name ?? teacher.email ?? "משתמש"}`}
                                 className={`text-xs font-medium px-2 py-1 rounded-full border border-border cursor-pointer ${
                                   ROLE_COLORS[teacher.role] ?? ""
                                 }`}
@@ -599,7 +626,7 @@ export function AdminPanel() {
           {(unaffiliatedUsers.length > 0 || unaffiliatedGroups.length > 0) && (!query || unaffiliatedUsers.some(u => u.name?.toLowerCase().includes(query) || u.email?.toLowerCase().includes(query)) || unaffiliatedGroups.some(g => g.name.toLowerCase().includes(query))) && (
             <Card className="border-amber-200 bg-amber-50/50">
               <CardHeader className="pb-2 pt-3 px-4">
-                <div className="flex items-center gap-2 cursor-pointer" onClick={() => toggleSchool("__unaffiliated__")}>
+                <div className="flex items-center gap-2 cursor-pointer" role="button" tabIndex={0} aria-expanded={expandedSchools.has("__unaffiliated__")} onClick={() => toggleSchool("__unaffiliated__")} onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), toggleSchool("__unaffiliated__"))}>
                   {expandedSchools.has("__unaffiliated__") ? (
                     <ChevronUp className="h-4 w-4 text-amber-600 shrink-0" />
                   ) : (
@@ -779,7 +806,7 @@ export function AdminPanel() {
                       onChange={(e) => changeRole(user.id, e.target.value)}
                       disabled={updatingId === user.id}
                       dir="rtl"
-                      aria-label={`תפקיד של ${user.name}`}
+                      aria-label={`תפקיד של ${user.name ?? user.email ?? "משתמש"}`}
                       className={`text-xs font-medium px-3 py-1.5 min-h-[36px] rounded-full border border-border cursor-pointer focus:ring-2 focus:ring-ring focus:ring-offset-1 appearance-auto ${
                         ROLE_COLORS[user.role] ?? ""
                       }`}
@@ -794,7 +821,7 @@ export function AdminPanel() {
                       size="icon"
                       className="hover:bg-amber-100"
                       title="איפוס נתונים"
-                      aria-label="איפוס נתונים"
+                      aria-label={`איפוס נתונים של ${user.name ?? user.email ?? "משתמש"}`}
                       onClick={() =>
                         setConfirmDialog({ type: "reset", user })
                       }
@@ -807,7 +834,7 @@ export function AdminPanel() {
                       size="icon"
                       className="hover:bg-destructive/10"
                       title="מחיקת משתמש"
-                      aria-label="מחיקת משתמש"
+                      aria-label={`מחיקת משתמש ${user.name ?? user.email ?? "משתמש"}`}
                       onClick={() =>
                         setConfirmDialog({ type: "delete", user })
                       }
