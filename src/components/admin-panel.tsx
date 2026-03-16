@@ -127,6 +127,12 @@ export function AdminPanel() {
   const [assigningUser, setAssigningUser] = useState<string | null>(null);
   const [assigningGroup, setAssigningGroup] = useState<string | null>(null);
 
+  // Add user's children to class dialog
+  const [userClassDialog, setUserClassDialog] = useState<{ userId: string; userName: string } | null>(null);
+  const [userChildren, setUserChildren] = useState<{ id: string; name: string; grade: string | null; groupMemberships: { group: { id: string; name: string } }[] }[]>([]);
+  const [userChildrenLoading, setUserChildrenLoading] = useState(false);
+  const [addingChildToClass, setAddingChildToClass] = useState<string | null>(null);
+
   useEffect(() => {
     Promise.all([
       fetch("/api/admin/users").then((r) => r.json()),
@@ -496,6 +502,49 @@ export function AdminPanel() {
     }, 300);
     return () => clearTimeout(timer);
   }, [childSearchQuery, addChildDialog]);
+
+  // Fetch children when user-class dialog opens
+  useEffect(() => {
+    if (!userClassDialog) {
+      setUserChildren([]);
+      return;
+    }
+    setUserChildrenLoading(true);
+    fetch(`/api/admin/children?parentId=${userClassDialog.userId}`)
+      .then((r) => r.json())
+      .then((data) => setUserChildren(data))
+      .finally(() => setUserChildrenLoading(false));
+  }, [userClassDialog]);
+
+  async function handleAddUserChildToClass(childId: string, groupId: string) {
+    setAddingChildToClass(childId);
+    const res = await fetch("/api/admin/groups/members", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ groupId, childId }),
+    });
+    if (res.ok) {
+      const member = await res.json();
+      // Update groups state
+      setGroups((prev) =>
+        prev.map((g) =>
+          g.id === groupId
+            ? { ...g, members: [...g.members, member], _count: { ...g._count, members: g._count.members + 1 } }
+            : g
+        )
+      );
+      // Update local children list to reflect new membership
+      const group = groups.find((g) => g.id === groupId);
+      setUserChildren((prev) =>
+        prev.map((c) =>
+          c.id === childId
+            ? { ...c, groupMemberships: [...c.groupMemberships, { group: { id: groupId, name: group?.name ?? "" } }] }
+            : c
+        )
+      );
+    }
+    setAddingChildToClass(null);
+  }
 
   if (loading) return <LoadingState />;
 
@@ -1057,6 +1106,17 @@ export function AdminPanel() {
                   </div>
 
                   <div className="flex items-center gap-1.5 shrink-0">
+                    {(user._count.children + user._count.childParents) > 0 && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="h-7 text-[10px] px-2"
+                        onClick={() => setUserClassDialog({ userId: user.id, userName: user.name ?? user.email ?? "" })}
+                      >
+                        <Plus className="h-3 w-3 ml-1" />
+                        לכיתה
+                      </Button>
+                    )}
                     <select
                       value={user.role}
                       onChange={(e) => changeRole(user.id, e.target.value)}
@@ -1365,6 +1425,72 @@ export function AdminPanel() {
                 </button>
               ))}
             </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add User's Children to Class Dialog */}
+      <Dialog
+        open={!!userClassDialog}
+        onOpenChange={(open) => {
+          if (!open) setUserClassDialog(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>הוספת ילדי {userClassDialog?.userName} לכיתה</DialogTitle>
+            <DialogDescription>
+              בחרו כיתה לכל ילד כדי לשייך אותו.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2 max-h-[60vh] overflow-y-auto">
+            {userChildrenLoading && (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="h-4 w-4 animate-spin" />
+              </div>
+            )}
+            {!userChildrenLoading && userChildren.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-4">אין ילדים רשומים למשתמש זה</p>
+            )}
+            {userChildren.map((child) => (
+              <div key={child.id} className="border rounded-lg p-3 space-y-2">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium">{child.name}</p>
+                    {child.grade && <p className="text-[10px] text-muted-foreground">כיתה {child.grade}</p>}
+                  </div>
+                </div>
+                {child.groupMemberships.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {child.groupMemberships.map((gm) => (
+                      <span key={gm.group.id} className="text-[10px] bg-green-50 text-green-700 px-1.5 py-0.5 rounded-full">
+                        {gm.group.name}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <select
+                  value=""
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      handleAddUserChildToClass(child.id, e.target.value);
+                    }
+                  }}
+                  disabled={addingChildToClass === child.id}
+                  dir="rtl"
+                  className="w-full text-xs px-2 py-1.5 rounded border border-input bg-background cursor-pointer"
+                >
+                  <option value="">+ הוסף לכיתה...</option>
+                  {groups
+                    .filter((g) => !child.groupMemberships.some((gm) => gm.group.id === g.id))
+                    .map((g) => (
+                      <option key={g.id} value={g.id}>
+                        {g.name}{g.school ? ` (${g.school.name})` : ""}
+                      </option>
+                    ))}
+                </select>
+              </div>
+            ))}
           </div>
         </DialogContent>
       </Dialog>
