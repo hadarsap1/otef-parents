@@ -78,9 +78,11 @@ export async function GET() {
     orderBy: [{ date: "asc" }, { startTime: "asc" }],
   });
 
-  // Filter: for sub-grouped lessons, only include if at least one child is in a sub-group
+  // Filter: TIMESLOTS lessons are always visible (parents self-select).
+  // MANUAL sub-grouped lessons are only shown if at least one child is in a sub-group.
   const filtered = lessons.filter((lesson) => {
     if (!lesson.hasSubGroups) return true;
+    if (lesson.subGroupMode === "TIMESLOTS") return true;
     return lesson.subGroups.some((sg) =>
       sg.members.some((m) => childIds.includes(m.childId))
     );

@@ -58,9 +58,10 @@ export default async function LessonsPage() {
     orderBy: [{ date: "asc" }, { startTime: "asc" }],
   });
 
-  // Filter: for sub-grouped lessons, only include if a child is in a sub-group
+  // Filter: TIMESLOTS always visible (parents self-select), MANUAL only if child is assigned
   const filtered = lessons.filter((lesson) => {
     if (!lesson.hasSubGroups) return true;
+    if (lesson.subGroupMode === "TIMESLOTS") return true;
     return lesson.subGroups.some((sg) =>
       sg.members.some((m) => childIds.includes(m.childId))
     );
@@ -79,7 +80,11 @@ export default async function LessonsPage() {
   return (
     <div className="space-y-4">
       <LessonsPageHeader />
-      <ParentLessons initialLessons={filtered} childIds={childIds} />
+      <ParentLessons
+        initialLessons={filtered}
+        childIds={childIds}
+        children={children.map((c) => ({ id: c.id, name: c.name }))}
+      />
       <PersonalLessons
         items={scheduleItems.map((s) => ({
           id: s.id,

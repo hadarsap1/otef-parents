@@ -22,9 +22,6 @@ export async function POST(req: NextRequest, { params }: Params) {
   // Verify the lesson is TIMESLOTS mode
   const lesson = await prisma.lesson.findUnique({
     where: { id },
-    include: {
-      subGroups: { include: { _count: { select: { members: true } } } },
-    },
   });
 
   if (!lesson || !lesson.hasSubGroups || lesson.subGroupMode !== "TIMESLOTS") {
@@ -45,29 +42,52 @@ export async function POST(req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "Child not found" }, { status: 404 });
   }
 
-  // Find the target slot
-  const slot = lesson.subGroups.find((sg) => sg.id === lessonGroupId);
+  // Verify the target slot belongs to this lesson (outside the transaction is fine —
+  // we only need maxCapacity metadata, not the live count).
+  const slot = await prisma.lessonGroup.findFirst({
+    where: { id: lessonGroupId, lessonId: id },
+  });
   if (!slot) {
     return NextResponse.json({ error: "Slot not found" }, { status: 404 });
   }
 
-  // Check capacity
-  if (slot.maxCapacity && slot._count.members >= slot.maxCapacity) {
-    return NextResponse.json({ error: "Slot is full" }, { status: 400 });
+  // Wrap the delete + capacity-check + create in a single transaction so that
+  // no two concurrent requests can both pass the capacity guard or observe a
+  // stale member count.
+  let member: Awaited<ReturnType<typeof prisma.lessonGroupMember.create>>;
+  try {
+    member = await prisma.$transaction(async (tx) => {
+      // 1. Remove the child from any other slot in this lesson first so that
+      //    the freed seat is visible to the count query that follows.
+      await tx.lessonGroupMember.deleteMany({
+        where: {
+          childId,
+          lessonGroup: { lessonId: id },
+        },
+      });
+
+      // 2. Re-check capacity with the live count AFTER the delete so that the
+      //    child's own old seat does not count against the limit.
+      if (slot.maxCapacity !== null) {
+        const currentCount = await tx.lessonGroupMember.count({
+          where: { lessonGroupId },
+        });
+        if (currentCount >= slot.maxCapacity) {
+          throw new Error("SLOT_FULL");
+        }
+      }
+
+      // 3. Create the new membership.
+      return tx.lessonGroupMember.create({
+        data: { lessonGroupId, childId },
+      });
+    });
+  } catch (err) {
+    if (err instanceof Error && err.message === "SLOT_FULL") {
+      return NextResponse.json({ error: "Slot is full" }, { status: 400 });
+    }
+    throw err;
   }
-
-  // Remove child from any other slot in this lesson first
-  await prisma.lessonGroupMember.deleteMany({
-    where: {
-      childId,
-      lessonGroup: { lessonId: id },
-    },
-  });
-
-  // Add to the selected slot
-  const member = await prisma.lessonGroupMember.create({
-    data: { lessonGroupId, childId },
-  });
 
   return NextResponse.json(member, { status: 201 });
 }

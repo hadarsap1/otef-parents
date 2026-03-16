@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Clock, ChevronDown, ChevronUp, Video, SplitSquareHorizontal, Repeat, Check, Loader2 as Loader } from "lucide-react";
+import { Clock, ChevronDown, ChevronUp, Video, SplitSquareHorizontal, Repeat, Check, Loader2 as Loader, AlertTriangle } from "lucide-react";
 import {
   Card,
   CardHeader,
@@ -22,6 +22,11 @@ interface SubGroup {
   endTime: string;
   maxCapacity: number | null;
   members: { child: { id: string; name: string } }[];
+}
+
+interface ChildInfo {
+  id: string;
+  name: string;
 }
 
 interface Lesson {
@@ -49,30 +54,45 @@ function formatDateHe(dateVal: string | Date) {
 
 function TimeslotPicker({
   lesson,
-  childIds,
+  children,
 }: {
   lesson: Lesson;
-  childIds: string[];
+  children: ChildInfo[];
 }) {
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedChildId, setSelectedChildId] = useState(children[0]?.id ?? "");
 
-  if (!lesson.subGroups || childIds.length === 0) return null;
+  if (!lesson.subGroups || children.length === 0) return null;
 
-  // Find which slot the child is currently in
+  // Find which slot the selected child is in
   const childSlot = lesson.subGroups.find((sg) =>
-    sg.members.some((m) => childIds.includes(m.child.id))
+    sg.members.some((m) => m.child.id === selectedChildId)
   );
 
   async function handleJoin(lessonGroupId: string) {
     setLoading(lessonGroupId);
+    setError(null);
     try {
-      await fetch(`/api/lessons/${lesson.id}/join`, {
+      const res = await fetch(`/api/lessons/${lesson.id}/join`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ childId: childIds[0], lessonGroupId }),
+        body: JSON.stringify({ childId: selectedChildId, lessonGroupId }),
       });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        const messages: Record<string, string> = {
+          "Slot is full": "המשבצת מלאה. נסו משבצת אחרת.",
+          "Child not found": "ילד/ה לא נמצא/ה",
+          "Slot not found": "משבצת לא נמצאה",
+        };
+        setError(messages[data?.error] ?? "שגיאה. נסו שוב.");
+        return;
+      }
       router.refresh();
+    } catch {
+      setError("שגיאת רשת. בדקו את החיבור ונסו שוב.");
     } finally {
       setLoading(null);
     }
@@ -80,22 +100,61 @@ function TimeslotPicker({
 
   async function handleLeave() {
     setLoading("leave");
+    setError(null);
     try {
-      await fetch(`/api/lessons/${lesson.id}/join`, {
+      const res = await fetch(`/api/lessons/${lesson.id}/join`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ childId: childIds[0] }),
+        body: JSON.stringify({ childId: selectedChildId }),
       });
+      if (!res.ok) {
+        setError("שגיאה בביטול הרשמה. נסו שוב.");
+        return;
+      }
       router.refresh();
+    } catch {
+      setError("שגיאת רשת. בדקו את החיבור ונסו שוב.");
     } finally {
       setLoading(null);
     }
   }
 
   return (
-    <div className="mt-2 space-y-1.5">
-      <p className="text-xs text-muted-foreground">בחרו משבצת זמן:</p>
-      <div className="grid grid-cols-2 gap-1.5">
+    <div className="mt-2 space-y-2">
+      {/* Child selector for multi-child parents */}
+      {children.length > 1 && (
+        <div className="space-y-1">
+          <p className="text-xs text-muted-foreground">בחרו ילד/ה:</p>
+          <div className="flex flex-wrap gap-1.5">
+            {children.map((child) => {
+              const isInAnySlot = lesson.subGroups?.some((sg) =>
+                sg.members.some((m) => m.child.id === child.id)
+              );
+              return (
+                <button
+                  key={child.id}
+                  type="button"
+                  onClick={() => { setSelectedChildId(child.id); setError(null); }}
+                  className={cn(
+                    "text-sm px-3 py-1.5 rounded-lg border transition-colors min-h-[36px]",
+                    selectedChildId === child.id
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "border-border hover:border-primary/50"
+                  )}
+                >
+                  {child.name}
+                  {isInAnySlot && <Check className="h-3 w-3 inline-block ms-1" />}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      <p className="text-xs text-muted-foreground">
+        {children.length === 1 ? `בחרו משבצת זמן ל${children[0].name}:` : `בחרו משבצת זמן:`}
+      </p>
+      <div className="grid grid-cols-2 gap-1.5" role="radiogroup" aria-label="בחירת משבצת זמן">
         {lesson.subGroups.map((sg) => {
           const memberCount = sg.members.length;
           const isFull = sg.maxCapacity != null && memberCount >= sg.maxCapacity;
@@ -105,6 +164,9 @@ function TimeslotPicker({
             <button
               key={sg.id}
               type="button"
+              role="radio"
+              aria-checked={isSelected}
+              aria-label={`${sg.startTime}-${sg.endTime}, ${isSelected ? "נבחר" : isFull ? "מלא" : `${memberCount} מתוך ${sg.maxCapacity ?? "∞"} רשומים`}`}
               disabled={loading !== null || (isFull && !isSelected)}
               onClick={() => isSelected ? handleLeave() : handleJoin(sg.id)}
               className={cn(
@@ -116,7 +178,7 @@ function TimeslotPicker({
                     : "border-border hover:border-primary/50"
               )}
             >
-              <span className="font-medium">{sg.startTime}-{sg.endTime}</span>
+              <span className="font-medium" dir="ltr">{sg.startTime}-{sg.endTime}</span>
               <span className="text-xs">
                 {loading === sg.id || (loading === "leave" && isSelected) ? (
                   <Loader className="h-3.5 w-3.5 animate-spin" />
@@ -132,10 +194,20 @@ function TimeslotPicker({
           );
         })}
       </div>
+
       {childSlot && (
-        <p className="text-xs text-primary">
-          נרשמתם ל-{childSlot.startTime}-{childSlot.endTime}
+        <p className="text-xs text-primary" dir="ltr">
+          {children.length > 1
+            ? `${children.find((c) => c.id === selectedChildId)?.name}: ${childSlot.startTime}-${childSlot.endTime}`
+            : `נרשמתם ל-${childSlot.startTime}-${childSlot.endTime}`}
         </p>
+      )}
+
+      {error && (
+        <div className="flex items-center gap-1.5 text-xs text-destructive" role="alert">
+          <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+          {error}
+        </div>
       )}
     </div>
   );
@@ -144,9 +216,11 @@ function TimeslotPicker({
 export function ParentLessons({
   initialLessons,
   childIds,
+  children,
 }: {
   initialLessons: Lesson[];
   childIds?: string[];
+  children?: ChildInfo[];
 }) {
   const [expanded, setExpanded] = useState(true);
 
@@ -159,6 +233,9 @@ export function ParentLessons({
       />
     );
   }
+
+  // Build children list from childIds if not provided
+  const childrenList = children ?? (childIds ?? []).map((id) => ({ id, name: "" }));
 
   return (
     <div className="space-y-3">
@@ -227,10 +304,10 @@ export function ParentLessons({
                         <span className="text-xs font-medium text-muted-foreground">
                           {formatDateHe(lesson.date)}
                         </span>
-                        <span className="text-sm font-semibold">
+                        <span className="text-sm font-semibold" dir="ltr">
                           {displayTime.start}
                         </span>
-                        <span className="text-[11px] text-muted-foreground">
+                        <span className="text-[11px] text-muted-foreground" dir="ltr">
                           {displayTime.end}
                         </span>
                       </div>
@@ -250,15 +327,20 @@ export function ParentLessons({
                               · {subGroupName}
                             </span>
                           )}
-                          {isTimeslots && (
-                            <span className="ms-1 text-primary">
-                              · בחירת משבצת
+                          {isTimeslots && !lesson.subGroups?.some((sg) => sg.members.some((m) => childIds?.includes(m.child.id))) && (
+                            <span className="ms-1 text-amber-600">
+                              · טרם נבחרה משבצת
                             </span>
                           )}
                         </p>
                         {lesson.teacher.name && (
                           <p className="text-xs text-muted-foreground truncate">
                             {lesson.teacher.name}
+                          </p>
+                        )}
+                        {lesson.notes && (
+                          <p className="text-xs text-muted-foreground mt-0.5 truncate" title={lesson.notes}>
+                            {lesson.notes}
                           </p>
                         )}
                       </div>
@@ -280,8 +362,8 @@ export function ParentLessons({
                     </div>
 
                     {/* Timeslot picker for parents */}
-                    {isTimeslots && childIds && childIds.length > 0 && (
-                      <TimeslotPicker lesson={lesson} childIds={childIds} />
+                    {isTimeslots && childrenList.length > 0 && (
+                      <TimeslotPicker lesson={lesson} children={childrenList} />
                     )}
                   </div>
                 );

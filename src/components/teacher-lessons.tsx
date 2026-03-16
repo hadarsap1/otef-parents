@@ -193,16 +193,34 @@ export function TeacherLessons({
     );
   }
 
+  const [slotError, setSlotError] = useState<string | null>(null);
+
   function generateTimeslots() {
     const intervalMin = Number(slotInterval) || 30;
     const cap = slotCapacity;
-    const slots: typeof subGroups = [];
     const [startH, startM] = slotRangeStart.split(":").map(Number);
     const [endH, endM] = slotRangeEnd.split(":").map(Number);
-    let current = startH * 60 + startM;
-    const end = endH * 60 + endM;
+    const startTotal = startH * 60 + startM;
+    const endTotal = endH * 60 + endM;
+
+    if (endTotal <= startTotal) {
+      setSlotError("שעת סיום חייבת להיות אחרי שעת התחלה");
+      return;
+    }
+    if (intervalMin > endTotal - startTotal) {
+      setSlotError("משך המשבצת גדול מטווח השעות");
+      return;
+    }
+    if (intervalMin < 5) {
+      setSlotError("משך משבצת מינימלי הוא 5 דקות");
+      return;
+    }
+
+    setSlotError(null);
+    const slots: typeof subGroups = [];
+    let current = startTotal;
     let idx = 1;
-    while (current + intervalMin <= end) {
+    while (current + intervalMin <= endTotal) {
       const slotStart = `${String(Math.floor(current / 60)).padStart(2, "0")}:${String(current % 60).padStart(2, "0")}`;
       const slotEnd = `${String(Math.floor((current + intervalMin) / 60)).padStart(2, "0")}:${String((current + intervalMin) % 60).padStart(2, "0")}`;
       slots.push({
@@ -354,7 +372,7 @@ export function TeacherLessons({
                 יצירת שיעור לתאריך מסוים. כל הילדים בכיתה יראו אותו.
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-3 max-h-[calc(100dvh-200px)] overflow-y-auto">
+            <div className="space-y-3 max-h-[calc(100dvh-180px)] overflow-y-auto -mx-1 px-1">
               <div className="space-y-1.5">
                 <Label htmlFor="lesson-title">שם השיעור</Label>
                 <Input
@@ -524,7 +542,16 @@ export function TeacherLessons({
                   <div className="flex gap-2">
                     <button
                       type="button"
-                      onClick={() => { setSubGroupMode("TIMESLOTS"); setSubGroups([]); }}
+                      role="radio"
+                      aria-checked={subGroupMode === "TIMESLOTS"}
+                      aria-label="מצב: משבצות זמן — ההורים בוחרים משבצת"
+                      onClick={() => {
+                        if (subGroupMode === "TIMESLOTS") return;
+                        if (subGroups.length > 0 && !confirm("מעבר מצב ימחק את הקבוצות הקיימות. להמשיך?")) return;
+                        setSubGroupMode("TIMESLOTS");
+                        setSubGroups([]);
+                        setSlotError(null);
+                      }}
                       className={cn(
                         "flex-1 rounded-xl border px-3 py-2 text-sm text-center transition-colors min-h-[44px]",
                         subGroupMode === "TIMESLOTS"
@@ -537,7 +564,17 @@ export function TeacherLessons({
                     </button>
                     <button
                       type="button"
-                      onClick={() => { setSubGroupMode("MANUAL"); setSubGroups([]); if (subGroups.length === 0) addSubGroup(); }}
+                      role="radio"
+                      aria-checked={subGroupMode === "MANUAL"}
+                      aria-label="מצב: שיבוץ ידני — המורה משבץ ילדים"
+                      onClick={() => {
+                        if (subGroupMode === "MANUAL") return;
+                        if (!groupId) return;
+                        if (subGroups.length > 0 && !confirm("מעבר מצב ימחק את המשבצות הקיימות. להמשיך?")) return;
+                        setSubGroupMode("MANUAL");
+                        setSubGroups([]);
+                        addSubGroup();
+                      }}
                       className={cn(
                         "flex-1 rounded-xl border px-3 py-2 text-sm text-center transition-colors min-h-[44px]",
                         subGroupMode === "MANUAL"
@@ -589,6 +626,12 @@ export function TeacherLessons({
                           />
                         </div>
                       </div>
+                      {slotError && (
+                        <div className="flex items-center gap-1.5 text-xs text-destructive" role="alert">
+                          <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+                          {slotError}
+                        </div>
+                      )}
                       <Button
                         type="button"
                         variant="outline"
@@ -598,6 +641,11 @@ export function TeacherLessons({
                       >
                         יצירת משבצות
                       </Button>
+                      {recurrence !== "ONCE" && (
+                        <p className="text-xs text-muted-foreground">
+                          המשבצות יהיו זהות כל {recurrence === "WEEKLY" ? "שבוע" : "יום"}.
+                        </p>
+                      )}
 
                       {/* Preview generated slots */}
                       {subGroups.length > 0 && (
@@ -606,7 +654,7 @@ export function TeacherLessons({
                           <div className="grid grid-cols-2 gap-1.5">
                             {subGroups.map((sg, idx) => (
                               <div key={idx} className="flex items-center justify-between rounded-lg border border-border/40 px-2.5 py-1.5 text-xs">
-                                <span className="font-medium">{sg.startTime}-{sg.endTime}</span>
+                                <span className="font-medium" dir="ltr">{sg.startTime}-{sg.endTime}</span>
                                 <span className="text-muted-foreground">עד {sg.maxCapacity}</span>
                               </div>
                             ))}
@@ -620,8 +668,13 @@ export function TeacherLessons({
                   {subGroupMode === "MANUAL" && groupId && (
                     <div className="space-y-3">
                       <p className="text-xs text-muted-foreground">
-                        שבצו ילדים לקבוצות. ילדים שלא שובצו יועברו אוטומטית לקבוצה הבאה.
+                        שבצו ילדים לקבוצות ידנית. ילדים שלא שובצו לא יראו את השיעור.
                       </p>
+                      {roster.length > 0 && (
+                        <p className="text-xs font-medium">
+                          {assignedChildIds.size}/{roster.length} משובצים
+                        </p>
+                      )}
                       {subGroups.map((sg, idx) => (
                         <div key={idx} className="rounded-xl border border-border/40 p-3 space-y-2">
                           <div className="flex items-center justify-between gap-2">
@@ -822,7 +875,11 @@ export function TeacherLessons({
           <DialogHeader>
             <DialogTitle>מחיקת שיעור</DialogTitle>
             <DialogDescription>
-              האם למחוק את השיעור? לא ניתן לבטל פעולה זו.
+              {(() => {
+                const lesson = sorted.find((l) => l.id === deleteConfirmId);
+                if (!lesson) return "האם למחוק את השיעור? לא ניתן לבטל פעולה זו.";
+                return `האם למחוק את "${lesson.title}" (${formatDateHe(lesson.date)})${lesson.hasSubGroups ? ` עם ${lesson.subGroups?.length ?? 0} ${lesson.subGroupMode === "TIMESLOTS" ? "משבצות" : "קבוצות"}` : ""}? לא ניתן לבטל פעולה זו.`;
+              })()}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
