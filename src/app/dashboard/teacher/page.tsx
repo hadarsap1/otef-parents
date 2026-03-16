@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { TeacherDashboardTabs } from "@/components/teacher-dashboard-tabs";
+import { TeacherLessons } from "@/components/teacher-lessons";
 import { SchoolSwitcher, CreateSchoolCard } from "@/components/school-switcher";
 
 export default async function TeacherDashboardPage() {
@@ -20,7 +20,7 @@ export default async function TeacherDashboardPage() {
     prisma.group.findMany({
       where: { teacherId: session.user.id },
       include: {
-        _count: { select: { members: true } },
+        members: { select: { child: { select: { id: true, name: true } } } },
       },
       orderBy: { createdAt: "desc" },
     }),
@@ -52,10 +52,9 @@ export default async function TeacherDashboardPage() {
       <SchoolSwitcher schools={session.user.schools ?? []} />
       <CreateSchoolCard />
 
-      <TeacherDashboardTabs
-        initialGroups={groups}
+      <TeacherLessons
         initialLessons={lessons}
-        groups={groups.map((g) => ({ id: g.id, name: g.name }))}
+        groups={groups.map((g) => ({ id: g.id, name: g.name, members: g.members }))}
       />
     </div>
   );
