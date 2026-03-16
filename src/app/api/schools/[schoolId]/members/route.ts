@@ -58,11 +58,11 @@ export async function POST(req: NextRequest, { params }: Params) {
     },
   });
 
-  // Upgrade user to TEACHER if they're a PARENT
+  // Upgrade user role if they're a PARENT
   if (user.role === "PARENT") {
     await prisma.user.update({
       where: { id: user.id },
-      data: { role: "TEACHER" },
+      data: { role: memberRole },
     });
   }
 

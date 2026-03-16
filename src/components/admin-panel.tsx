@@ -363,144 +363,168 @@ export function AdminPanel() {
   }
 
   async function handleAddStaff() {
-    if (!addStaffDialog || !addStaffEmail.trim()) return;
+    if (!addStaffDialog || !addStaffEmail.trim() || addStaffLoading) return;
+    const { schoolId, schoolName } = addStaffDialog;
+    const role = addStaffRole;
     setAddStaffLoading(true);
     setAddStaffError("");
-    const res = await fetch(`/api/schools/${addStaffDialog.schoolId}/members`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: addStaffEmail.trim(), role: addStaffRole }),
-    });
-    if (res.ok) {
-      const member = await res.json();
-      // Update users state - add school membership, handle role upgrade
-      setUsers((prev) => {
-        const existing = prev.find((u) => u.id === member.user.id);
-        if (existing) {
-          return prev.map((u) =>
+    try {
+      const res = await fetch(`/api/schools/${schoolId}/members`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: addStaffEmail.trim(), role }),
+      });
+      if (res.ok) {
+        const member = await res.json();
+        setUsers((prev) =>
+          prev.map((u) =>
             u.id === member.user.id
+              ? {
+                  ...u,
+                  role: u.role === "PARENT" ? role : u.role,
+                  schoolMemberships: [
+                    ...u.schoolMemberships,
+                    { role, school: { id: schoolId, name: schoolName } },
+                  ],
+                }
+              : u
+          )
+        );
+        setSchools((prev) =>
+          prev.map((s) => s.id === schoolId ? { ...s, _count: { ...s._count, members: s._count.members + 1 } } : s)
+        );
+        setAddStaffDialog(null);
+        setAddStaffEmail("");
+        setAddStaffRole("TEACHER");
+      } else {
+        const data = await res.json();
+        if (res.status === 404) setAddStaffError("משתמש לא נמצא");
+        else if (res.status === 409) setAddStaffError("המשתמש כבר חבר בבית הספר");
+        else setAddStaffError(data.error || "שגיאה");
+      }
+    } catch {
+      setAddStaffError("שגיאת רשת");
+    } finally {
+      setAddStaffLoading(false);
+    }
+  }
+
+  async function handleAddChildToGroup(childId: string) {
+    if (!addChildDialog || addChildLoading) return;
+    const { groupId } = addChildDialog;
+    setAddChildLoading(true);
+    setAddChildError("");
+    try {
+      const res = await fetch("/api/admin/groups/members", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ groupId, childId }),
+      });
+      if (res.ok) {
+        const member = await res.json();
+        setGroups((prev) =>
+          prev.map((g) =>
+            g.id === groupId
+              ? { ...g, members: [...g.members, member], _count: { ...g._count, members: g._count.members + 1 } }
+              : g
+          )
+        );
+        setAddChildDialog(null);
+        setChildSearchQuery("");
+        setChildSearchResults([]);
+      } else {
+        const data = await res.json();
+        if (res.status === 409) setAddChildError("הילד כבר בכיתה");
+        else setAddChildError(data.error || "שגיאה");
+      }
+    } catch {
+      setAddChildError("שגיאת רשת");
+    } finally {
+      setAddChildLoading(false);
+    }
+  }
+
+  async function handleAssignGroupToSchool(groupId: string, schoolId: string) {
+    setAssigningGroup(groupId);
+    try {
+      const res = await fetch("/api/admin/groups", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ groupId, schoolId }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setGroups((prev) =>
+          prev.map((g) => g.id === groupId ? { ...g, school: updated.school } : g)
+        );
+        setSchools((prev) =>
+          prev.map((s) => s.id === schoolId ? { ...s, _count: { ...s._count, groups: s._count.groups + 1 } } : s)
+        );
+      }
+    } catch {
+      // silent — select resets to placeholder
+    } finally {
+      setAssigningGroup(null);
+    }
+  }
+
+  async function handleAssignUserToSchool(userId: string, userEmail: string, schoolId: string) {
+    setAssigningUser(userId);
+    try {
+      const res = await fetch(`/api/schools/${schoolId}/members`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: userEmail }),
+      });
+      if (res.ok) {
+        const school = schools.find((s) => s.id === schoolId);
+        setUsers((prev) =>
+          prev.map((u) =>
+            u.id === userId
               ? {
                   ...u,
                   role: u.role === "PARENT" ? "TEACHER" : u.role,
                   schoolMemberships: [
                     ...u.schoolMemberships,
-                    { role: addStaffRole, school: { id: addStaffDialog.schoolId, name: addStaffDialog.schoolName } },
+                    { role: "TEACHER", school: { id: schoolId, name: school?.name ?? "" } },
                   ],
                 }
               : u
-          );
-        }
-        return prev;
-      });
-      setAddStaffDialog(null);
-      setAddStaffEmail("");
-      setAddStaffRole("TEACHER");
-    } else {
-      const data = await res.json();
-      if (res.status === 404) setAddStaffError("משתמש לא נמצא");
-      else if (res.status === 409) setAddStaffError("המשתמש כבר חבר בבית הספר");
-      else setAddStaffError(data.error || "שגיאה");
+          )
+        );
+        setSchools((prev) =>
+          prev.map((s) => s.id === schoolId ? { ...s, _count: { ...s._count, members: s._count.members + 1 } } : s)
+        );
+      }
+    } catch {
+      // silent
+    } finally {
+      setAssigningUser(null);
     }
-    setAddStaffLoading(false);
   }
 
-  async function handleAddChildToGroup(childId: string) {
-    if (!addChildDialog) return;
-    setAddChildLoading(true);
-    setAddChildError("");
-    const res = await fetch("/api/admin/groups/members", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ groupId: addChildDialog.groupId, childId }),
-    });
-    if (res.ok) {
-      const member = await res.json();
-      setGroups((prev) =>
-        prev.map((g) =>
-          g.id === addChildDialog.groupId
-            ? {
-                ...g,
-                members: [...g.members, member],
-                _count: { ...g._count, members: g._count.members + 1 },
-              }
-            : g
-        )
-      );
-      setAddChildDialog(null);
-      setChildSearchQuery("");
-      setChildSearchResults([]);
-    } else {
-      const data = await res.json();
-      if (res.status === 409) setAddChildError("הילד כבר בכיתה");
-      else setAddChildError(data.error || "שגיאה");
-    }
-    setAddChildLoading(false);
-  }
-
-  async function handleAssignGroupToSchool(groupId: string, schoolId: string) {
-    setAssigningGroup(groupId);
-    const res = await fetch("/api/admin/groups", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ groupId, schoolId }),
-    });
-    if (res.ok) {
-      const updated = await res.json();
-      setGroups((prev) =>
-        prev.map((g) =>
-          g.id === groupId ? { ...g, school: updated.school } : g
-        )
-      );
-    }
-    setAssigningGroup(null);
-  }
-
-  async function handleAssignUserToSchool(userEmail: string, schoolId: string) {
-    const user = users.find((u) => u.email === userEmail);
-    if (!user) return;
-    setAssigningUser(user.id);
-    const res = await fetch(`/api/schools/${schoolId}/members`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email: userEmail }),
-    });
-    if (res.ok) {
-      const school = schools.find((s) => s.id === schoolId);
-      setUsers((prev) =>
-        prev.map((u) =>
-          u.id === user.id
-            ? {
-                ...u,
-                role: u.role === "PARENT" ? "TEACHER" : u.role,
-                schoolMemberships: [
-                  ...u.schoolMemberships,
-                  { role: "TEACHER", school: { id: schoolId, name: school?.name ?? "" } },
-                ],
-              }
-            : u
-        )
-      );
-    }
-    setAssigningUser(null);
-  }
-
-  // Debounced child search
+  // Debounced child search with AbortController
   useEffect(() => {
     if (!addChildDialog || childSearchQuery.length < 2) {
       setChildSearchResults([]);
       return;
     }
+    const controller = new AbortController();
     const timer = setTimeout(async () => {
       setChildSearchLoading(true);
-      const res = await fetch(
-        `/api/admin/children?q=${encodeURIComponent(childSearchQuery)}&excludeGroupId=${addChildDialog.groupId}`
-      );
-      if (res.ok) {
-        setChildSearchResults(await res.json());
+      try {
+        const res = await fetch(
+          `/api/admin/children?q=${encodeURIComponent(childSearchQuery)}&excludeGroupId=${addChildDialog.groupId}`,
+          { signal: controller.signal }
+        );
+        if (res.ok) setChildSearchResults(await res.json());
+      } catch (e) {
+        if ((e as Error).name !== "AbortError") setChildSearchResults([]);
+      } finally {
+        setChildSearchLoading(false);
       }
-      setChildSearchLoading(false);
     }, 300);
-    return () => clearTimeout(timer);
+    return () => { clearTimeout(timer); controller.abort(); };
   }, [childSearchQuery, addChildDialog]);
 
   // Fetch children when user-class dialog opens
@@ -518,32 +542,35 @@ export function AdminPanel() {
 
   async function handleAddUserChildToClass(childId: string, groupId: string) {
     setAddingChildToClass(childId);
-    const res = await fetch("/api/admin/groups/members", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ groupId, childId }),
-    });
-    if (res.ok) {
-      const member = await res.json();
-      // Update groups state
-      setGroups((prev) =>
-        prev.map((g) =>
-          g.id === groupId
-            ? { ...g, members: [...g.members, member], _count: { ...g._count, members: g._count.members + 1 } }
-            : g
-        )
-      );
-      // Update local children list to reflect new membership
-      const group = groups.find((g) => g.id === groupId);
-      setUserChildren((prev) =>
-        prev.map((c) =>
-          c.id === childId
-            ? { ...c, groupMemberships: [...c.groupMemberships, { group: { id: groupId, name: group?.name ?? "" } }] }
-            : c
-        )
-      );
+    const groupName = groups.find((g) => g.id === groupId)?.name ?? "";
+    try {
+      const res = await fetch("/api/admin/groups/members", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ groupId, childId }),
+      });
+      if (res.ok) {
+        const member = await res.json();
+        setGroups((prev) =>
+          prev.map((g) =>
+            g.id === groupId
+              ? { ...g, members: [...g.members, member], _count: { ...g._count, members: g._count.members + 1 } }
+              : g
+          )
+        );
+        setUserChildren((prev) =>
+          prev.map((c) =>
+            c.id === childId
+              ? { ...c, groupMemberships: [...c.groupMemberships, { group: { id: groupId, name: groupName } }] }
+              : c
+          )
+        );
+      }
+    } catch {
+      // silent — select resets
+    } finally {
+      setAddingChildToClass(null);
     }
-    setAddingChildToClass(null);
   }
 
   if (loading) return <LoadingState />;
@@ -676,7 +703,7 @@ export function AdminPanel() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-6 w-6"
+                          className="h-8 w-8 text-primary hover:bg-primary/10"
                           aria-label={`הוספת איש צוות ל${school.name}`}
                           onClick={() => {
                             setAddStaffDialog({ schoolId: school.id, schoolName: school.name });
@@ -759,10 +786,14 @@ export function AdminPanel() {
                                   </div>
                                 ) : (
                                   <div
+                                    role="button"
+                                    tabIndex={0}
+                                    aria-expanded={expandedGroup === group.id}
                                     className="flex items-center gap-2 flex-1 cursor-pointer min-h-[40px]"
                                     onClick={() =>
                                       setExpandedGroup(expandedGroup === group.id ? null : group.id)
                                     }
+                                    onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && (e.preventDefault(), setExpandedGroup(expandedGroup === group.id ? null : group.id))}
                                   >
                                     {expandedGroup === group.id ? (
                                       <ChevronUp className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -778,7 +809,7 @@ export function AdminPanel() {
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-7 w-7"
+                                    className="h-8 w-8 text-primary hover:bg-primary/10"
                                     aria-label={`הוספת ילד ל${group.name}`}
                                     onClick={(e) => {
                                       e.stopPropagation();
@@ -793,7 +824,7 @@ export function AdminPanel() {
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-7 w-7"
+                                    className="h-8 w-8"
                                     onClick={(e) => {
                                       e.stopPropagation();
                                       setEditingGroup(group.id);
@@ -921,7 +952,7 @@ export function AdminPanel() {
                                   value=""
                                   onChange={(e) => {
                                     if (e.target.value && user.email) {
-                                      handleAssignUserToSchool(user.email, e.target.value);
+                                      handleAssignUserToSchool(user.id, user.email ?? "", e.target.value);
                                     }
                                   }}
                                   disabled={assigningUser === user.id}
@@ -1087,7 +1118,7 @@ export function AdminPanel() {
                             value=""
                             onChange={(e) => {
                               if (e.target.value && user.email) {
-                                handleAssignUserToSchool(user.email, e.target.value);
+                                handleAssignUserToSchool(user.id, user.email ?? "", e.target.value);
                               }
                             }}
                             disabled={assigningUser === user.id}
@@ -1113,7 +1144,7 @@ export function AdminPanel() {
                         className="h-7 text-[10px] px-2"
                         onClick={() => setUserClassDialog({ userId: user.id, userName: user.name ?? user.email ?? "" })}
                       >
-                        <Plus className="h-3 w-3 ml-1" />
+                        <Plus className="h-3 w-3 me-1" />
                         לכיתה
                       </Button>
                     )}
@@ -1330,6 +1361,7 @@ export function AdminPanel() {
                 type="email"
                 dir="ltr"
                 placeholder="user@example.com"
+                autoFocus
                 value={addStaffEmail}
                 onChange={(e) => setAddStaffEmail(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleAddStaff()}
@@ -1353,7 +1385,7 @@ export function AdminPanel() {
             )}
           </div>
           <DialogFooter className="gap-2">
-            <Button variant="outline" className="rounded-xl" onClick={() => setAddStaffDialog(null)}>
+            <Button variant="outline" className="rounded-xl" onClick={() => { setAddStaffDialog(null); setAddStaffError(""); setAddStaffRole("TEACHER"); }}>
               ביטול
             </Button>
             <Button
@@ -1361,7 +1393,7 @@ export function AdminPanel() {
               disabled={addStaffLoading || !addStaffEmail.trim()}
               onClick={handleAddStaff}
             >
-              {addStaffLoading ? <><Loader2 className="h-4 w-4 animate-spin ml-2" />מוסיף...</> : "הוספה"}
+              {addStaffLoading ? <><Loader2 className="h-4 w-4 animate-spin me-2" />מוסיף...</> : "הוספה"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1392,6 +1424,7 @@ export function AdminPanel() {
               <Input
                 id="child-search"
                 placeholder="הקלידו לפחות 2 תווים..."
+                autoFocus
                 value={childSearchQuery}
                 onChange={(e) => setChildSearchQuery(e.target.value)}
                 dir="auto"
@@ -1426,6 +1459,11 @@ export function AdminPanel() {
               ))}
             </div>
           </div>
+          <DialogFooter>
+            <Button variant="outline" className="rounded-xl" onClick={() => { setAddChildDialog(null); setChildSearchQuery(""); setChildSearchResults([]); setAddChildError(""); }}>
+              ביטול
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -1481,17 +1519,30 @@ export function AdminPanel() {
                   className="w-full text-xs px-2 py-1.5 rounded border border-input bg-background cursor-pointer"
                 >
                   <option value="">+ הוסף לכיתה...</option>
-                  {groups
-                    .filter((g) => !child.groupMemberships.some((gm) => gm.group.id === g.id))
-                    .map((g) => (
-                      <option key={g.id} value={g.id}>
-                        {g.name}{g.school ? ` (${g.school.name})` : ""}
-                      </option>
-                    ))}
+                  {(() => {
+                    const userSchoolIds = new Set(
+                      users.find((u) => u.id === userClassDialog?.userId)?.schoolMemberships.map((m) => m.school.id) ?? []
+                    );
+                    return groups
+                      .filter((g) =>
+                        !child.groupMemberships.some((gm) => gm.group.id === g.id) &&
+                        (userSchoolIds.size === 0 || !g.school || userSchoolIds.has(g.school.id))
+                      )
+                      .map((g) => (
+                        <option key={g.id} value={g.id}>
+                          {g.name}{g.school ? ` (${g.school.name})` : ""}
+                        </option>
+                      ));
+                  })()}
                 </select>
               </div>
             ))}
           </div>
+          <DialogFooter>
+            <Button variant="outline" className="rounded-xl" onClick={() => setUserClassDialog(null)}>
+              סגור
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

@@ -57,7 +57,7 @@ export async function PUT(req: NextRequest) {
 
   const data: { name?: string; schoolId?: string | null } = {};
   if (name?.trim()) data.name = name.trim();
-  if (schoolId !== undefined) data.schoolId = schoolId;
+  if (schoolId !== undefined) data.schoolId = schoolId || null;
 
   if (Object.keys(data).length === 0) {
     return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
