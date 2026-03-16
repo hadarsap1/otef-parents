@@ -22,6 +22,12 @@ export async function GET() {
           ownedGroups: true,
         },
       },
+      schoolMemberships: {
+        select: {
+          role: true,
+          school: { select: { id: true, name: true } },
+        },
+      },
     },
     orderBy: { createdAt: "desc" },
   });
