@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 
 const tabs = [
   { href: "", label: "ראשי" },
-  { href: "/groups", label: "קבוצות" },
+  { href: "/groups", label: "כיתות" },
   { href: "/members", label: "מורים" },
   { href: "/import", label: "ייבוא" },
   { href: "/settings", label: "הגדרות" },

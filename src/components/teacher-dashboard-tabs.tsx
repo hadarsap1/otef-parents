@@ -49,7 +49,7 @@ export function TeacherDashboardTabs({
     <Tabs defaultValue="lessons">
       <TabsList className="w-full">
         <TabsTrigger value="lessons">שיעורים</TabsTrigger>
-        <TabsTrigger value="groups">קבוצות</TabsTrigger>
+        <TabsTrigger value="groups">כיתות</TabsTrigger>
       </TabsList>
       <TabsContent value="lessons">
         <TeacherLessons initialLessons={initialLessons} groups={groups} />

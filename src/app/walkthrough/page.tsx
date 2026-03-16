@@ -121,7 +121,7 @@ const parentSlides: Slide[] = [
     subtitle: "בחרו את הילד/ה שלכם מהרשימה",
     bullets: [
       { icon: Users, text: "עברו ללשונית ״ילדים״ בתפריט התחתון" },
-      { icon: Search, text: "חפשו את שם הילד/ה ברשימה לפי קבוצה (בית ספר)" },
+      { icon: Search, text: "חפשו את שם הילד/ה ברשימה לפי כיתה (בית ספר)" },
       { text: "לחצו ״זה הילד/ה שלי״ - וזהו!" },
       { text: "יש אחים? אפשר לשייך כמה ילדים, גם מבתי ספר שונים" },
     ],
@@ -199,7 +199,7 @@ const parentSlides: Slide[] = [
     subtitle: "יצירה והצטרפות למפגשים",
     bullets: [
       { icon: Plus, text: "לחצו ״אירוח חדש״ ליצירת מפגש" },
-      { text: "בחרו קבוצה, כתובת, תאריך ומספר מקומות" },
+      { text: "בחרו כיתה, כתובת, תאריך ומספר מקומות" },
       { icon: HandHeart, text: "הצטרפו למפגשים קיימים בלחיצה" },
       { text: "ביטול השתתפות אפשרי בכל עת" },
     ],
@@ -236,10 +236,10 @@ const parentSlides: Slide[] = [
     icon: Clock,
     iconBg: "bg-sky-100 text-sky-600",
     title: "שיעורים",
-    subtitle: "לוח שיעורים שבועי לפי קבוצה",
+    subtitle: "לוח שיעורים לפי כיתה",
     bullets: [
       { text: "ראו את כל השיעורים לפי ימים בשבוע" },
-      { text: "השיעורים מופיעים אוטומטית לפי הקבוצות שלכם" },
+      { text: "השיעורים מופיעים אוטומטית לפי הכיתות שלכם" },
       { icon: Video, text: "קישור זום יופיע ליד שיעורים אונליין" },
       { icon: Calendar, text: "הוסיפו שיעור ליומן Google בלחיצה" },
     ],
@@ -390,12 +390,12 @@ const teacherSlides: Slide[] = [
   {
     icon: UsersRound,
     iconBg: "bg-emerald-100 text-emerald-600",
-    title: "ניהול קבוצות",
+    title: "ניהול כיתות",
     subtitle: "יצירה וניהול של כיתות וגנים",
     bullets: [
       { icon: UsersRound, text: "עברו ללשונית ״ניהול״ בתפריט התחתון" },
-      { icon: Plus, text: "צרו קבוצה חדשה (כיתה/גן)" },
-      { text: "הוסיפו ילדים לקבוצה" },
+      { icon: Plus, text: "צרו כיתה חדשה" },
+      { text: "הוסיפו ילדים לכיתה" },
       { text: "שלחו קוד הצטרפות להורים" },
     ],
     visual: (
@@ -403,7 +403,7 @@ const teacherSlides: Slide[] = [
         <div className="space-y-1.5">
           <div className="font-bold text-foreground text-xs">ניהול</div>
           <div className="flex gap-1">
-            <span className="text-[9px] bg-primary text-white rounded px-2 py-0.5">קבוצות</span>
+            <span className="text-[9px] bg-primary text-white rounded px-2 py-0.5">כיתות</span>
             <span className="text-[9px] bg-muted rounded px-2 py-0.5">שיעורים</span>
           </div>
           <MiniCard highlight>
@@ -424,7 +424,7 @@ const teacherSlides: Slide[] = [
               <Settings className="h-3 w-3 text-muted-foreground" />
             </div>
           </MiniCard>
-          <div className="text-center text-[8px] bg-primary/10 text-primary rounded py-1 font-medium">+ קבוצה חדשה</div>
+          <div className="text-center text-[8px] bg-primary/10 text-primary rounded py-1 font-medium">+ כיתה חדשה</div>
         </div>
       </PhoneMock>
     ),
@@ -435,7 +435,7 @@ const teacherSlides: Slide[] = [
     title: "הוספת תלמידים",
     subtitle: "הוסיפו תלמידים ידנית או ייבאו רשימה",
     bullets: [
-      { icon: UserPlus, text: "הוספה ידנית - בכרטיס הקבוצה, לחצו ״הוספת ילד״" },
+      { icon: UserPlus, text: "הוספה ידנית - בכרטיס הכיתה, לחצו ״הוספת ילד״" },
       { icon: Upload, text: "ייבוא רשימה - הדביקו שמות, רשימה מקובצת לפי כיתות, או CSV" },
       { icon: ListChecks, text: "תצוגה מקדימה לבדיקה לפני אישור סופי" },
       { text: "לאחר הייבוא, ההורים יצטרפו עם קוד הזמנה" },
@@ -481,9 +481,9 @@ const teacherSlides: Slide[] = [
     bullets: [
       { text: "עברו ללשונית ״שיעורים״ בעמוד הניהול" },
       { icon: Plus, text: "לחצו ״שיעור חדש״" },
-      { text: "בחרו קבוצה, נושא, יום, שעה" },
+      { text: "בחרו כיתה, נושא, תאריך, שעה" },
       { icon: Video, text: "הוסיפו קישור זום (אופציונלי)" },
-      { text: "השיעורים יופיעו אוטומטית להורים בקבוצה" },
+      { text: "השיעורים יופיעו אוטומטית להורים בכיתה" },
     ],
     visual: (
       <PhoneMock>
@@ -491,7 +491,7 @@ const teacherSlides: Slide[] = [
           <div className="font-bold text-foreground text-xs">שיעור חדש</div>
           <div className="space-y-1">
             <div className="rounded border border-border/60 px-2 py-1 text-[9px]">
-              <span className="text-muted-foreground">קבוצה:</span> כיתה א׳
+              <span className="text-muted-foreground">כיתה:</span> כיתה א׳
             </div>
             <div className="rounded border border-border/60 px-2 py-1 text-[9px]">
               <span className="text-muted-foreground">נושא:</span> מתמטיקה

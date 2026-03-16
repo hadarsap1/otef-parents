@@ -21,6 +21,7 @@ export async function GET() {
   const groups = await prisma.group.findMany({
     include: {
       teacher: { select: { id: true, name: true, email: true } },
+      school: { select: { id: true, name: true } },
       members: {
         include: {
           child: {

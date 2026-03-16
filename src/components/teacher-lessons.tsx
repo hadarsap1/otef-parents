@@ -297,7 +297,7 @@ export function TeacherLessons({
             <DialogHeader>
               <DialogTitle>שיעור חדש</DialogTitle>
               <DialogDescription>
-                יצירת שיעור לתאריך מסוים. כל הילדים בקבוצה יראו אותו.
+                יצירת שיעור לתאריך מסוים. כל הילדים בכיתה יראו אותו.
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-3 max-h-[calc(100dvh-200px)] overflow-y-auto">

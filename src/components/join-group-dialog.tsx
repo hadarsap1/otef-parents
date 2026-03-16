@@ -55,7 +55,7 @@ export function JoinGroupDialog({ children }: JoinGroupDialogProps) {
     if (res.ok) {
       setResult({
         ok: true,
-        message: `הילד/ה הצטרף/ה בהצלחה לקבוצה "${data.groupName}"!`,
+        message: `הילד/ה הצטרף/ה בהצלחה לכיתה "${data.groupName}"!`,
       });
     } else {
       const messages: Record<string, string> = {
@@ -63,7 +63,7 @@ export function JoinGroupDialog({ children }: JoinGroupDialogProps) {
         "Code already used": "הקוד כבר נוצל",
         "Code has expired": "הקוד פג תוקף",
         "Child not found or not yours": "ילד/ה לא נמצא/ה",
-        "Child is already in this group": "הילד/ה כבר בקבוצה זו",
+        "Child is already in this group": "הילד/ה כבר בכיתה זו",
         "childId is required": "יש לבחור ילד/ה",
       };
       setResult({
@@ -84,15 +84,15 @@ export function JoinGroupDialog({ children }: JoinGroupDialogProps) {
         onClick={handleOpen}
       >
         <UsersRound className="h-4 w-4" />
-        הצטרפות לקבוצה
+        הצטרפות לכיתה
       </DialogTrigger>
       <DialogContent className="max-w-sm">
         <DialogHeader>
-          <DialogTitle>הצטרפות לקבוצת מורה</DialogTitle>
+          <DialogTitle>הצטרפות לכיתה</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 pt-2">
           <p className="text-sm text-muted-foreground">
-            קיבלת קוד מהמורה? הזן אותו כאן כדי לצרף ילד/ה לקבוצה.
+            קיבלת קוד מהמורה? הזן אותו כאן כדי לצרף ילד/ה לכיתה.
           </p>
 
           {/* Child selection */}
@@ -126,7 +126,7 @@ export function JoinGroupDialog({ children }: JoinGroupDialogProps) {
           {children.length === 1 && (
             <p className="text-sm">
               מצרפים את <span className="font-medium">{children[0].name}</span>{" "}
-              לקבוצה
+              לכיתה
             </p>
           )}
 

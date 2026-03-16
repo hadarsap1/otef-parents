@@ -17,7 +17,7 @@ export function parseSimpleList(text: string, groupName: string): ImportChild[] 
 /** Grouped format: lines ending with ":" are group headers, names below go to that group */
 export function parseGrouped(text: string): ImportChild[] {
   const results: ImportChild[] = [];
-  let currentGroup = "ללא קבוצה"; // default for names before first header
+  let currentGroup = "ללא כיתה"; // default for names before first header
 
   for (const raw of text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").split("\n")) {
     const line = raw.trim();
@@ -59,7 +59,7 @@ export function parseCsv(text: string): ImportChild[] {
 
   const header = parseCsvLine(lines[0]).map((h) => h.toLowerCase());
   const nameIdx = header.findIndex((h) => h === "name" || h === "שם");
-  const groupIdx = header.findIndex((h) => h === "group" || h === "קבוצה");
+  const groupIdx = header.findIndex((h) => h === "group" || h === "קבוצה" || h === "כיתה");
   const gradeIdx = header.findIndex((h) => h === "grade" || h === "כיתה");
 
   if (nameIdx === -1 || groupIdx === -1) return [];

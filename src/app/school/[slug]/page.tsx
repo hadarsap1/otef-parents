@@ -48,7 +48,7 @@ export default async function SchoolDashboardPage({
               </div>
               <div>
                 <p className="text-2xl font-bold">{school._count.groups}</p>
-                <p className="text-xs text-muted-foreground">קבוצות</p>
+                <p className="text-xs text-muted-foreground">כיתות</p>
               </div>
             </CardContent>
           </Card>

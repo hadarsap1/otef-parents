@@ -95,7 +95,7 @@ function buildDigestHtml(data: DailyDigestData): string {
         <tr style="background:#f1f5f9;">
           <th style="padding:8px 12px;text-align:right;font-size:13px;color:#64748b;">שעה</th>
           <th style="padding:8px 12px;text-align:right;font-size:13px;color:#64748b;">שיעור</th>
-          <th style="padding:8px 12px;text-align:right;font-size:13px;color:#64748b;">קבוצה</th>
+          <th style="padding:8px 12px;text-align:right;font-size:13px;color:#64748b;">כיתה</th>
           <th style="padding:8px 12px;text-align:right;font-size:13px;color:#64748b;">זום</th>
         </tr>
         ${rows}

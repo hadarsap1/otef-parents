@@ -187,7 +187,7 @@ export function AccountSettings({ user, hasCalendarAccess }: AccountSettingsProp
                 <DialogTitle>מחיקת חשבון</DialogTitle>
                 <DialogDescription>
                   פעולה זו בלתי הפיכה. כל המידע שלכם יימחק לצמיתות, כולל ילדים,
-                  שיעורים, קבוצות, מפגשים ואירועים.
+                  שיעורים, כיתות, מפגשים ואירועים.
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-2">

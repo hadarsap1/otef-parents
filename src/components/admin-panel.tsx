@@ -47,6 +47,7 @@ interface AdminGroup {
   id: string;
   name: string;
   teacher: { id: string; name: string | null; email: string | null };
+  school: { id: string; name: string } | null;
   members: GroupMember[];
   _count: { members: number; playdates: number; lessons: number };
 }
@@ -230,7 +231,7 @@ export function AdminPanel() {
         <div className="grid grid-cols-2 gap-3">
           <StatCard icon={Users} label="משתמשים" value={stats.users} />
           <StatCard icon={GraduationCap} label="ילדים" value={stats.children} />
-          <StatCard icon={UsersRound} label="קבוצות" value={stats.groups} />
+          <StatCard icon={UsersRound} label="כיתות" value={stats.groups} />
           <StatCard icon={BookOpen} label="שיעורים" value={stats.lessons} />
         </div>
       )}
@@ -251,7 +252,7 @@ export function AdminPanel() {
           onClick={() => setActiveTab("groups")}
         >
           <UsersRound className="h-4 w-4" />
-          קבוצות
+          כיתות
         </Button>
         <Button
           variant={activeTab === "users" ? "default" : "outline"}
@@ -307,7 +308,7 @@ export function AdminPanel() {
                   )}
                   <div className="flex items-center gap-1.5 shrink-0">
                     <span className="text-xs text-muted-foreground">
-                      {school._count.groups} קבוצות · {school._count.members} מורים
+                      {school._count.groups} כיתות · {school._count.members} מורים
                     </span>
                     <Button
                       variant="ghost"
@@ -355,7 +356,18 @@ export function AdminPanel() {
                     </div>
                   ) : (
                     <div className="flex items-center gap-2">
-                      <CardTitle className="text-base">{group.name}</CardTitle>
+                      <div>
+                        <CardTitle className="text-base">{group.name}</CardTitle>
+                        {group.school && (
+                          <p className="text-xs text-muted-foreground">
+                            <School className="h-3 w-3 inline-block me-0.5" />
+                            {group.school.name}
+                          </p>
+                        )}
+                        {!group.school && (
+                          <p className="text-xs text-amber-600">ללא בית ספר</p>
+                        )}
+                      </div>
                       <Button
                         variant="ghost"
                         size="icon-sm"
@@ -432,7 +444,7 @@ export function AdminPanel() {
                     })}
                     {group.members.length === 0 && (
                       <p className="text-sm text-muted-foreground text-center py-2">
-                        אין ילדים בקבוצה
+                        אין ילדים בכיתה
                       </p>
                     )}
                   </div>
@@ -442,7 +454,7 @@ export function AdminPanel() {
           ))}
           {groups.length === 0 && (
             <p className="text-sm text-muted-foreground text-center py-4">
-              אין קבוצות
+              אין כיתות
             </p>
           )}
         </div>
@@ -482,7 +494,7 @@ export function AdminPanel() {
                   <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
                     <span>{user._count.children + user._count.childParents} ילדים</span>
                     <span>·</span>
-                    <span>{user._count.ownedGroups} קבוצות</span>
+                    <span>{user._count.ownedGroups} כיתות</span>
                     <span>·</span>
                     <span>{user._count.lessons} שיעורים</span>
                   </div>
@@ -559,7 +571,7 @@ export function AdminPanel() {
                 <>
                   האם לאפס את כל הנתונים של{" "}
                   <strong>{confirmDialog?.user.name}</strong> (
-                  {confirmDialog?.user.email})? ילדים, שיעורים, קבוצות, אירועים
+                  {confirmDialog?.user.email})? ילדים, שיעורים, כיתות, אירועים
                   ומפגשים יימחקו. החשבון עצמו יישמר.
                 </>
               )}
@@ -606,7 +618,7 @@ export function AdminPanel() {
             <DialogTitle>מחיקת בית ספר</DialogTitle>
             <DialogDescription>
               האם למחוק את <strong>{deleteSchoolDialog?.name}</strong> לצמיתות?
-              כל הקבוצות, החברים והנתונים של בית הספר יימחקו ולא ניתן יהיה לשחזר אותם.
+              כל הכיתות, החברים והנתונים של בית הספר יימחקו ולא ניתן יהיה לשחזר אותם.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2">

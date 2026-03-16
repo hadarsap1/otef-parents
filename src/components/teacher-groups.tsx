@@ -141,27 +141,27 @@ export function TeacherGroups({ initialGroups }: { initialGroups: Group[] }) {
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
-          {groups.length > 0 ? `${groups.length} קבוצות` : ""}
+          {groups.length > 0 ? `${groups.length} כיתות` : ""}
         </p>
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
           <DialogTrigger
             render={
               <Button size="sm">
                 <Plus className="h-4 w-4" data-icon="inline-start" />
-                קבוצה חדשה
+                כיתה חדשה
               </Button>
             }
           />
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>יצירת קבוצה חדשה</DialogTitle>
+              <DialogTitle>יצירת כיתה חדשה</DialogTitle>
               <DialogDescription>
-                צרו קבוצה כדי לנהל שיעורים לקבוצת תלמידים
+                צרו כיתה כדי לנהל שיעורים לתלמידים
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-3">
               <div className="space-y-1.5">
-                <Label htmlFor="group-name">שם הקבוצה</Label>
+                <Label htmlFor="group-name">שם הכיתה</Label>
                 <Input
                   id="group-name"
                   value={name}
@@ -175,7 +175,7 @@ export function TeacherGroups({ initialGroups }: { initialGroups: Group[] }) {
                   id="group-desc"
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="תיאור קצר של הקבוצה"
+                  placeholder="תיאור קצר של הכיתה"
                 />
               </div>
             </div>
@@ -191,8 +191,8 @@ export function TeacherGroups({ initialGroups }: { initialGroups: Group[] }) {
       {groups.length === 0 ? (
         <EmptyState
           icon={Users}
-          title="אין קבוצות עדיין"
-          description="צרו קבוצה חדשה כדי להתחיל"
+          title="אין כיתות עדיין"
+          description="צרו כיתה חדשה כדי להתחיל"
         />
       ) : (
         groups.map((group) => (
@@ -216,7 +216,7 @@ export function TeacherGroups({ initialGroups }: { initialGroups: Group[] }) {
                     size="icon-sm"
                     className="rounded-lg hover:bg-primary/10"
                     onClick={() => openEdit(group)}
-                    aria-label="עריכת קבוצה"
+                    aria-label="עריכת כיתה"
                   >
                     <Pencil className="h-3.5 w-3.5 text-primary" />
                   </Button>
@@ -225,7 +225,7 @@ export function TeacherGroups({ initialGroups }: { initialGroups: Group[] }) {
                     size="icon-sm"
                     className="rounded-lg hover:bg-destructive/10"
                     onClick={() => setDeleteGroup(group)}
-                    aria-label="מחיקת קבוצה"
+                    aria-label="מחיקת כיתה"
                   >
                     <Trash2 className="h-3.5 w-3.5 text-destructive" />
                   </Button>
@@ -256,7 +256,7 @@ export function TeacherGroups({ initialGroups }: { initialGroups: Group[] }) {
           <DialogHeader>
             <DialogTitle>קוד הזמנה</DialogTitle>
             <DialogDescription>
-              שתפו את הקוד עם ההורים כדי שיוכלו לצרף את ילדיהם לקבוצה
+              שתפו את הקוד עם ההורים כדי שיוכלו לצרף את ילדיהם לכיתה
             </DialogDescription>
           </DialogHeader>
           <div className="flex items-center justify-center gap-2">
@@ -284,14 +284,14 @@ export function TeacherGroups({ initialGroups }: { initialGroups: Group[] }) {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>עריכת קבוצה</DialogTitle>
+            <DialogTitle>עריכת כיתה</DialogTitle>
             <DialogDescription>
-              עדכון פרטי הקבוצה
+              עדכון פרטי הכיתה
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <div className="space-y-1.5">
-              <Label htmlFor="edit-group-name">שם הקבוצה</Label>
+              <Label htmlFor="edit-group-name">שם הכיתה</Label>
               <Input
                 id="edit-group-name"
                 value={editName}
@@ -332,11 +332,11 @@ export function TeacherGroups({ initialGroups }: { initialGroups: Group[] }) {
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>מחיקת קבוצה</AlertDialogTitle>
+            <AlertDialogTitle>מחיקת כיתה</AlertDialogTitle>
             <AlertDialogDescription>
-              האם למחוק את הקבוצה <strong>{deleteGroup?.name}</strong>?
+              האם למחוק את הכיתה <strong>{deleteGroup?.name}</strong>?
               {deleteGroup && deleteGroup._count.members > 0 && (
-                <> הקבוצה כוללת {deleteGroup._count.members} תלמידים שיוסרו ממנה.</>
+                <> הכיתה כוללת {deleteGroup._count.members} תלמידים שיוסרו ממנה.</>
               )}
               {" "}פעולה זו אינה ניתנת לביטול.
             </AlertDialogDescription>

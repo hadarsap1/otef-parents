@@ -35,7 +35,7 @@ export default async function SchoolGroupsPage({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
-        <span className="text-sm text-muted-foreground">{groups.length} קבוצות</span>
+        <span className="text-sm text-muted-foreground">{groups.length} כיתות</span>
       </div>
 
       {groups.map((group) => (
@@ -61,8 +61,8 @@ export default async function SchoolGroupsPage({
       {groups.length === 0 && (
         <EmptyState
           icon={UsersRound}
-          title="אין קבוצות עדיין"
-          description="ייבא תלמידים או צור קבוצה ידנית כדי להתחיל."
+          title="אין כיתות עדיין"
+          description="ייבא תלמידים או צור כיתה ידנית כדי להתחיל."
         />
       )}
     </div>

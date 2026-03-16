@@ -65,7 +65,7 @@ export default function SchoolImportPage() {
         <CardContent className="py-8 text-center space-y-2">
           <p className="text-lg font-bold">הייבוא הושלם!</p>
           <p className="text-sm text-muted-foreground">
-            {result.groupsCreated} קבוצות · {result.childrenCreated} ילדים
+            {result.groupsCreated} כיתות · {result.childrenCreated} ילדים
           </p>
           <div className="flex gap-2 justify-center">
             <Button
@@ -80,7 +80,7 @@ export default function SchoolImportPage() {
               ייבוא נוסף
             </Button>
             <Button onClick={() => window.location.href = `/school/${slug}/groups`}>
-              לקבוצות
+              לכיתות
             </Button>
           </div>
         </CardContent>
@@ -156,19 +156,19 @@ export default function SchoolImportPage() {
               className="w-full mt-1 text-sm rounded-xl border border-input bg-background px-3 py-2 ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
             >
               <option value="simple">רשימה פשוטה (שם בכל שורה)</option>
-              <option value="grouped">מקובץ (שם קבוצה: ואחריו שמות)</option>
-              <option value="csv">CSV (עמודות: שם, קבוצה, כיתה)</option>
+              <option value="grouped">מקובץ (שם כיתה: ואחריו שמות)</option>
+              <option value="csv">CSV (עמודות: שם, כיתה, כיתה)</option>
             </select>
           </div>
 
           {format === "simple" && (
             <div>
-              <label htmlFor="import-group-name" className="text-sm font-medium">שם קבוצה</label>
+              <label htmlFor="import-group-name" className="text-sm font-medium">שם כיתה</label>
               <Input
                 id="import-group-name"
                 value={defaultGroup}
                 onChange={(e) => setDefaultGroup(e.target.value)}
-                placeholder="שם הקבוצה לכל הילדים"
+                placeholder="שם הכיתה לכל הילדים"
                 className="mt-1"
               />
             </div>
@@ -185,8 +185,8 @@ export default function SchoolImportPage() {
                 format === "simple"
                   ? "שם ילד\nשם ילד\nשם ילד"
                   : format === "grouped"
-                    ? "שם קבוצה:\nשם ילד\nשם ילד\n\nשם קבוצה אחר:\nשם ילד"
-                    : "שם,קבוצה,כיתה\nדני,גן שחף,גן\nנועה,כיתה א,א׳"
+                    ? "שם כיתה:\nשם ילד\nשם ילד\n\nשם כיתה אחר:\nשם ילד"
+                    : "שם,כיתה,כיתה\nדני,גן שחף,גן\nנועה,כיתה א,א׳"
               }
               dir="rtl"
             />

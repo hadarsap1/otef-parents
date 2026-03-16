@@ -270,7 +270,7 @@ export default function PlaydatesPage() {
               </DialogHeader>
               <div className="space-y-4 pt-2">
                 <div className="space-y-2">
-                  <Label htmlFor="pd-group">קבוצה</Label>
+                  <Label htmlFor="pd-group">כיתה</Label>
                   <select
                     id="pd-group"
                     value={selectedGroupId}
@@ -377,14 +377,14 @@ export default function PlaydatesPage() {
       {!hasGroups ? (
         <EmptyState
           icon={GraduationCap}
-          title="אין קבוצות עדיין"
-          description='הצטרפו לקבוצה דרך הכרטיסייה "ילדים" כדי ליצור ולראות מפגשים.'
+          title="אין כיתות עדיין"
+          description='הצטרפו לכיתה דרך הכרטיסייה "ילדים" כדי ליצור ולראות מפגשים.'
         />
       ) : playdates.length === 0 ? (
         <EmptyState
           icon={PartyPopper}
           title="אין מפגשים פתוחים כרגע"
-          description="פתחו מפגש חדש כדי להזמין ילדים מהקבוצה."
+          description="פתחו מפגש חדש כדי להזמין ילדים מהכיתה."
         />
       ) : (
         <div className="grid gap-3">

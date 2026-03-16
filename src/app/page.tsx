@@ -58,7 +58,7 @@ export default async function Home() {
         <Feature
           icon={PartyPopper}
           title="מפגשים בין ילדים"
-          description="יצירת מפגשים (playdates) בקבוצה, הצטרפות למפגשים קיימים וניהול הרשימה."
+          description="יצירת מפגשים (playdates) בכיתה, הצטרפות למפגשים קיימים וניהול הרשימה."
         />
         <Feature
           icon={Calendar}
@@ -72,8 +72,8 @@ export default async function Home() {
         />
         <Feature
           icon={Users}
-          title="ניהול ילדים וקבוצות"
-          description="שייכו את הילדים שלכם לקבוצה (כיתה/גן) וראו את כל הפעילויות במקום אחד."
+          title="ניהול ילדים וכיתות"
+          description="שייכו את הילדים שלכם לכיתה וראו את כל הפעילויות במקום אחד."
         />
       </div>
 
