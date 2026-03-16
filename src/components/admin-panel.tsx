@@ -1029,6 +1029,30 @@ export function AdminPanel() {
                           ))}
                         </>
                       )}
+                      {(() => {
+                        const memberSchoolIds = new Set(user.schoolMemberships.map((m) => m.school.id));
+                        const availableSchools = schools.filter((s) => !memberSchoolIds.has(s.id));
+                        if (availableSchools.length === 0) return null;
+                        return (
+                          <select
+                            value=""
+                            onChange={(e) => {
+                              if (e.target.value && user.email) {
+                                handleAssignUserToSchool(user.email, e.target.value);
+                              }
+                            }}
+                            disabled={assigningUser === user.id}
+                            dir="rtl"
+                            aria-label={`הוספת ${user.name ?? "משתמש"} לבית ספר`}
+                            className="text-[10px] px-1.5 py-0.5 rounded border border-blue-300 bg-white cursor-pointer max-w-[130px]"
+                          >
+                            <option value="">+ הוסף לבית ספר</option>
+                            {availableSchools.map((s) => (
+                              <option key={s.id} value={s.id}>{s.name}</option>
+                            ))}
+                          </select>
+                        );
+                      })()}
                     </div>
                   </div>
 
