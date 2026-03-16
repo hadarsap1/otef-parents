@@ -53,7 +53,7 @@ export default async function Home() {
         <Feature
           icon={Clock}
           title="לוח שיעורים שבועי"
-          description="צפייה בשיעורים לפי ימים עם קישורי זום, אפשרות להוסיף שיעורים ידנית ולסנכרן ליומן."
+          description="צפייה בשיעורים לפי תאריכים עם קישורי זום, בחירת משבצות זמן וסנכרון ליומן."
         />
         <Feature
           icon={PartyPopper}

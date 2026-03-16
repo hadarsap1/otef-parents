@@ -236,9 +236,9 @@ const parentSlides: Slide[] = [
     icon: Clock,
     iconBg: "bg-sky-100 text-sky-600",
     title: "שיעורים",
-    subtitle: "לוח שיעורים לפי כיתה",
+    subtitle: "שיעורים לפי תאריך וכיתה",
     bullets: [
-      { text: "ראו את כל השיעורים לפי ימים בשבוע" },
+      { text: "ראו את כל השיעורים הקרובים לפי תאריכים" },
       { text: "השיעורים מופיעים אוטומטית לפי הכיתות שלכם" },
       { icon: Video, text: "קישור זום יופיע ליד שיעורים אונליין" },
       { icon: Calendar, text: "הוסיפו שיעור ליומן Google בלחיצה" },
@@ -280,7 +280,7 @@ const parentSlides: Slide[] = [
     subtitle: "קיבלתם פרטים בוואטסאפ? הוסיפו בקלות",
     bullets: [
       { icon: Clock, text: "בעמוד ״שיעורים״ לחצו על ״+ שיעור חדש״" },
-      { text: "הזינו את שם השיעור, היום והשעה" },
+      { text: "הזינו את שם השיעור, תאריך ושעה" },
       { icon: Video, text: "הדביקו קישור זום שקיבלתם בהודעה" },
       { text: "השיעור יופיע בלוח השיעורים ובפיד היומי" },
       { icon: Calendar, text: "אפשר גם לסנכרן ליומן Google" },
@@ -477,13 +477,14 @@ const teacherSlides: Slide[] = [
     icon: BookOpen,
     iconBg: "bg-sky-100 text-sky-600",
     title: "יצירת שיעורים",
-    subtitle: "הגדירו לוח שיעורים שבועי",
+    subtitle: "יצירת שיעורים לפי תאריך",
     bullets: [
       { text: "עברו ללשונית ״שיעורים״ בעמוד הניהול" },
       { icon: Plus, text: "לחצו ״שיעור חדש״" },
-      { text: "בחרו כיתה, נושא, תאריך, שעה" },
+      { text: "בחרו בית ספר וכיתה (אופציונלי), נושא, תאריך ושעה" },
+      { text: "בחרו תדירות: חד פעמי, שבועי או יומי" },
       { icon: Video, text: "הוסיפו קישור זום (אופציונלי)" },
-      { text: "השיעורים יופיעו אוטומטית להורים בכיתה" },
+      { text: "אפשר לחלק למשבצות זמן (ההורים בוחרים) או שיבוץ ידני" },
     ],
     visual: (
       <PhoneMock>
@@ -491,13 +492,16 @@ const teacherSlides: Slide[] = [
           <div className="font-bold text-foreground text-xs">שיעור חדש</div>
           <div className="space-y-1">
             <div className="rounded border border-border/60 px-2 py-1 text-[9px]">
+              <span className="text-muted-foreground">בית ספר:</span> שחף
+            </div>
+            <div className="rounded border border-border/60 px-2 py-1 text-[9px]">
               <span className="text-muted-foreground">כיתה:</span> כיתה א׳
             </div>
             <div className="rounded border border-border/60 px-2 py-1 text-[9px]">
               <span className="text-muted-foreground">נושא:</span> מתמטיקה
             </div>
             <div className="rounded border border-border/60 px-2 py-1 text-[9px]">
-              <span className="text-muted-foreground">יום:</span> ראשון
+              <span className="text-muted-foreground">תאריך:</span> 20/3/2026
             </div>
             <div className="flex gap-1">
               <div className="flex-1 rounded border border-border/60 px-2 py-1 text-[9px]">09:00</div>
