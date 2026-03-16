@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Users, BookOpen, UsersRound, GraduationCap, RotateCcw, Trash2, Pencil, ChevronDown, ChevronUp, UserRound, School, Search } from "lucide-react";
+import { Users, BookOpen, UsersRound, GraduationCap, RotateCcw, Trash2, Pencil, ChevronDown, ChevronUp, UserRound, School, Search, AlertTriangle } from "lucide-react";
 import { LoadingState } from "@/components/ui/loading-state";
 import {
   Dialog,
@@ -93,6 +93,7 @@ export function AdminPanel() {
   const [editingGroup, setEditingGroup] = useState<string | null>(null);
   const [editGroupName, setEditGroupName] = useState("");
   const [removingMember, setRemovingMember] = useState<string | null>(null);
+  const [removeMemberDialog, setRemoveMemberDialog] = useState<{ groupId: string; childId: string; childName: string } | null>(null);
 
   // Tab & search state
   const [activeTab, setActiveTab] = useState<"schools" | "users">("schools");
@@ -122,10 +123,11 @@ export function AdminPanel() {
     });
   }, []);
 
-  // Derived data: group users by school
-  const schoolTeachers = useMemo(() => {
+  // Derived data: group staff (non-parents) by school
+  const schoolStaff = useMemo(() => {
     const map = new Map<string, UserRow[]>();
     for (const user of users) {
+      if (user.role === "PARENT") continue;
       for (const membership of user.schoolMemberships) {
         const list = map.get(membership.school.id) || [];
         list.push(user);
@@ -162,13 +164,13 @@ export function AdminPanel() {
     if (!query) return schools;
     return schools.filter((school) => {
       if (school.name.toLowerCase().includes(query)) return true;
-      const teachers = schoolTeachers.get(school.id) || [];
+      const teachers = schoolStaff.get(school.id) || [];
       if (teachers.some((t) => t.name?.toLowerCase().includes(query) || t.email?.toLowerCase().includes(query))) return true;
       const grps = schoolGroups.get(school.id) || [];
       if (grps.some((g) => g.name.toLowerCase().includes(query))) return true;
       return false;
     });
-  }, [schools, query, schoolTeachers, schoolGroups]);
+  }, [schools, query, schoolStaff, schoolGroups]);
 
   // Search + role filter for users tab
   const filteredUsers = useMemo(() => {
@@ -344,7 +346,7 @@ export function AdminPanel() {
           onClick={() => setActiveTab("schools")}
         >
           <School className="h-4 w-4" />
-          בתי ספר
+          בתי ספר ({filteredSchools.length})
         </Button>
         <Button
           variant={activeTab === "users" ? "default" : "outline"}
@@ -352,7 +354,7 @@ export function AdminPanel() {
           onClick={() => setActiveTab("users")}
         >
           <Users className="h-4 w-4" />
-          כל המשתמשים
+          כל המשתמשים ({filteredUsers.length})
         </Button>
       </div>
 
@@ -360,10 +362,10 @@ export function AdminPanel() {
       {activeTab === "schools" && (
         <div className="space-y-3">
           {filteredSchools.map((school) => {
-            const teachers = schoolTeachers.get(school.id) || [];
+            const staff = schoolStaff.get(school.id) || [];
             const grps = schoolGroups.get(school.id) || [];
             const childCount = schoolChildCount(school.id);
-            const isExpanded = expandedSchools.has(school.id);
+            const isExpanded = expandedSchools.has(school.id) || !!query;
 
             return (
               <Card key={school.id}>
@@ -395,35 +397,35 @@ export function AdminPanel() {
                         <CardTitle className="text-base">
                           <a
                             href={`/school/${school.slug}`}
-                            className="hover:underline"
+                            className="underline decoration-primary/30 hover:decoration-primary"
                             onClick={(e) => e.stopPropagation()}
                           >
                             {school.name}
                           </a>
                         </CardTitle>
                         <span className="text-xs text-muted-foreground whitespace-nowrap">
-                          {grps.length} כיתות · {teachers.length} מורים · {childCount} ילדים
+                          {grps.length} כיתות · {staff.length} צוות · {childCount} ילדים
                         </span>
                       </div>
                     )}
-                    <div className="flex items-center gap-1.5 shrink-0">
+                    <div className="flex items-center shrink-0">
                       <Button
                         variant="ghost"
-                        size="icon-sm"
+                        size="icon"
                         onClick={() => {
                           setEditingSchool(school.id);
                           setEditSchoolName(school.name);
                         }}
                       >
-                        <Pencil className="h-3.5 w-3.5" />
+                        <Pencil className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="ghost"
-                        size="icon-sm"
+                        size="icon"
                         className="hover:bg-destructive/10"
                         onClick={() => setDeleteSchoolDialog({ id: school.id, name: school.name })}
                       >
-                        <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                        <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     </div>
                   </div>
@@ -431,12 +433,12 @@ export function AdminPanel() {
 
                 {isExpanded && (
                   <CardContent className="px-4 pb-3 space-y-3">
-                    {/* Teachers section */}
-                    {teachers.length > 0 && (
+                    {/* Staff section */}
+                    {staff.length > 0 && (
                       <div>
-                        <p className="text-xs font-semibold text-muted-foreground mb-1.5">מורים</p>
+                        <p className="text-xs font-semibold text-muted-foreground mb-1.5">חברי צוות</p>
                         <div className="grid gap-1">
-                          {teachers.map((teacher) => (
+                          {staff.map((teacher) => (
                             <div
                               key={teacher.id}
                               className="flex items-center justify-between py-1.5 border-b border-dashed last:border-0"
@@ -504,40 +506,34 @@ export function AdminPanel() {
                                     </Button>
                                   </div>
                                 ) : (
-                                  <div className="flex items-center gap-2">
+                                  <div
+                                    className="flex items-center gap-2 flex-1 cursor-pointer min-h-[40px]"
+                                    onClick={() =>
+                                      setExpandedGroup(expandedGroup === group.id ? null : group.id)
+                                    }
+                                  >
+                                    {expandedGroup === group.id ? (
+                                      <ChevronUp className="h-4 w-4 text-muted-foreground shrink-0" />
+                                    ) : (
+                                      <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
+                                    )}
                                     <UsersRound className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                                     <span className="text-sm">{group.name}</span>
                                     <span className="text-[10px] text-muted-foreground">({group._count.members} ילדים)</span>
                                   </div>
                                 )}
-                                <div className="flex items-center gap-1">
-                                  <Button
-                                    variant="ghost"
-                                    size="icon-sm"
-                                    onClick={() => {
-                                      setEditingGroup(group.id);
-                                      setEditGroupName(group.name);
-                                    }}
-                                  >
-                                    <Pencil className="h-3 w-3" />
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="h-7"
-                                    onClick={() =>
-                                      setExpandedGroup(
-                                        expandedGroup === group.id ? null : group.id
-                                      )
-                                    }
-                                  >
-                                    {expandedGroup === group.id ? (
-                                      <ChevronUp className="h-3.5 w-3.5" />
-                                    ) : (
-                                      <ChevronDown className="h-3.5 w-3.5" />
-                                    )}
-                                  </Button>
-                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setEditingGroup(group.id);
+                                    setEditGroupName(group.name);
+                                  }}
+                                  aria-label={`עריכת שם כיתה ${group.name}`}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
                               </div>
 
                               {expandedGroup === group.id && (
@@ -564,12 +560,13 @@ export function AdminPanel() {
                                         </div>
                                         <Button
                                           variant="ghost"
-                                          size="icon-sm"
+                                          size="icon"
                                           className="hover:bg-destructive/10"
                                           disabled={removingMember === member.child.id}
-                                          onClick={() => removeMember(group.id, member.child.id)}
+                                          aria-label={`הסרת ${member.child.name} מהכיתה`}
+                                          onClick={() => setRemoveMemberDialog({ groupId: group.id, childId: member.child.id, childName: member.child.name })}
                                         >
-                                          <Trash2 className="h-3 w-3 text-destructive" />
+                                          <Trash2 className="h-4 w-4 text-destructive" />
                                         </Button>
                                       </div>
                                     );
@@ -587,9 +584,9 @@ export function AdminPanel() {
                       </div>
                     )}
 
-                    {teachers.length === 0 && grps.length === 0 && (
+                    {staff.length === 0 && grps.length === 0 && (
                       <p className="text-sm text-muted-foreground text-center py-2">
-                        אין מורים או כיתות בבית ספר זה
+                        אין חברי צוות או כיתות בבית ספר זה
                       </p>
                     )}
                   </CardContent>
@@ -600,7 +597,7 @@ export function AdminPanel() {
 
           {/* Unaffiliated section */}
           {(unaffiliatedUsers.length > 0 || unaffiliatedGroups.length > 0) && (!query || unaffiliatedUsers.some(u => u.name?.toLowerCase().includes(query) || u.email?.toLowerCase().includes(query)) || unaffiliatedGroups.some(g => g.name.toLowerCase().includes(query))) && (
-            <Card className="border-amber-200">
+            <Card className="border-amber-200 bg-amber-50/50">
               <CardHeader className="pb-2 pt-3 px-4">
                 <div className="flex items-center gap-2 cursor-pointer" onClick={() => toggleSchool("__unaffiliated__")}>
                   {expandedSchools.has("__unaffiliated__") ? (
@@ -608,6 +605,7 @@ export function AdminPanel() {
                   ) : (
                     <ChevronDown className="h-4 w-4 text-amber-600 shrink-0" />
                   )}
+                  <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
                   <CardTitle className="text-base text-amber-700">ללא בית ספר</CardTitle>
                   <span className="text-xs text-amber-600">
                     {unaffiliatedUsers.length} משתמשים · {unaffiliatedGroups.length} כיתות
@@ -672,13 +670,13 @@ export function AdminPanel() {
                               </div>
                               <Button
                                 variant="ghost"
-                                size="icon-sm"
+                                size="icon"
                                 onClick={() => {
                                   setEditingGroup(group.id);
                                   setEditGroupName(group.name);
                                 }}
                               >
-                                <Pencil className="h-3 w-3" />
+                                <Pencil className="h-4 w-4" />
                               </Button>
                             </div>
                           ))}
@@ -793,8 +791,8 @@ export function AdminPanel() {
                     </select>
                     <Button
                       variant="ghost"
-                      size="icon-sm"
-                      className="rounded-lg hover:bg-amber-100"
+                      size="icon"
+                      className="hover:bg-amber-100"
                       title="איפוס נתונים"
                       aria-label="איפוס נתונים"
                       onClick={() =>
@@ -802,12 +800,12 @@ export function AdminPanel() {
                       }
                       disabled={actionId === user.id}
                     >
-                      <RotateCcw className="h-3.5 w-3.5 text-amber-600" />
+                      <RotateCcw className="h-4 w-4 text-amber-600" />
                     </Button>
                     <Button
                       variant="ghost"
-                      size="icon-sm"
-                      className="rounded-lg hover:bg-destructive/10"
+                      size="icon"
+                      className="hover:bg-destructive/10"
                       title="מחיקת משתמש"
                       aria-label="מחיקת משתמש"
                       onClick={() =>
@@ -815,7 +813,7 @@ export function AdminPanel() {
                       }
                       disabled={actionId === user.id}
                     >
-                      <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                      <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
                   </div>
                 </div>
@@ -885,6 +883,43 @@ export function AdminPanel() {
                 : confirmDialog?.type === "delete"
                   ? "מחיקה לצמיתות"
                   : "איפוס נתונים"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Remove Member Dialog */}
+      <Dialog
+        open={!!removeMemberDialog}
+        onOpenChange={(open) => !open && setRemoveMemberDialog(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>הסרת ילד מכיתה</DialogTitle>
+            <DialogDescription>
+              האם להסיר את <strong>{removeMemberDialog?.childName}</strong> מהכיתה?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              className="rounded-xl"
+              onClick={() => setRemoveMemberDialog(null)}
+            >
+              ביטול
+            </Button>
+            <Button
+              variant="destructive"
+              className="rounded-xl"
+              disabled={removingMember !== null}
+              onClick={() => {
+                if (removeMemberDialog) {
+                  removeMember(removeMemberDialog.groupId, removeMemberDialog.childId);
+                  setRemoveMemberDialog(null);
+                }
+              }}
+            >
+              {removingMember ? "מסיר..." : "הסרה"}
             </Button>
           </DialogFooter>
         </DialogContent>
