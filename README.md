@@ -20,7 +20,10 @@ A family scheduling platform for Israeli parents and teachers. Manage children's
 ### For Admins
 - **School Management** — Create schools, import groups from CSV/XLSX
 - **User Management** — Assign roles (Parent, Teacher, Admin, Superadmin)
-- **Analytics Dashboard** — View user and group statistics
+- **Staff Management** — Add staff to schools by email with role picker (Teacher/Admin)
+- **Class Management** — Add children to classes via search, assign unaffiliated groups to schools
+- **User-to-School Assignment** — Assign users to schools and their children to classes from the Users tab
+- **Analytics Dashboard** — View user, children, group, and lesson statistics
 
 ## Tech Stack
 
@@ -137,11 +140,13 @@ src/
 │   ├── admin-panel.tsx
 │   └── ...
 ├── lib/
-│   ├── auth.ts               # NextAuth config + role helpers
+│   ├── auth.ts               # NextAuth config + role helpers + requireAdmin()
 │   ├── google-calendar.ts    # Calendar API client
 │   ├── email.ts              # Resend email + digest formatting
 │   ├── prisma.ts             # Prisma client
 │   ├── import-parsers.ts     # CSV/XLSX import parsing
+│   ├── rate-limit.ts         # In-memory rate limiter
+│   ├── validation.ts         # Input sanitization + validation helpers
 │   └── format.ts             # Date/time utilities
 └── types/                    # TypeScript definitions
 
@@ -211,11 +216,34 @@ Tests cover: login page, auth redirects, API protection, PWA manifest, RTL layou
 
 ## Security
 
+Hardened per [Web Application Security for AI Agents](https://getcandlekeep.com/marketplace/web-application-security-for-ai-agents-53yps5) (CandleKeep).
+
 ### Authentication & Authorization
 - **Google OAuth** via NextAuth.js with database-backed sessions (not JWT)
 - **Centralized middleware** (`src/middleware.ts`) protects all `/dashboard/*` and `/api/*` routes — defense-in-depth on top of per-route auth checks
 - **Role-based access control** — four roles (`PARENT`, `TEACHER`, `ADMIN`, `SUPERADMIN`) enforced via `requireRole()` and `requireSchoolRole()` helpers
+- **Centralized `requireAdmin()`** in `lib/auth.ts` — single source of truth for SUPERADMIN checks
 - School creation restricted to `TEACHER` and above — parents cannot self-elevate
+
+### Input Validation (`lib/validation.ts`)
+- **`sanitizeString(input, maxLength)`** — trims and enforces length limits on every text input across all 30+ API routes
+- **Length limits**: names 200, notes 2000, addresses 500, URLs 500, emoji 10, IDs 30
+- **`isValidEmail()`** — format validation on email inputs
+- **`isValidUrl()`** — protocol validation (http/https only) on all Zoom/URL fields
+- **Array caps** — subGroups limited to 20 items per lesson
+
+### Rate Limiting (`lib/rate-limit.ts`)
+In-memory per-process rate limiter on critical endpoints:
+| Endpoint | Limit | Window |
+|----------|-------|--------|
+| Invite code redemption | 10 requests | 60s per user |
+| Admin child search | 30 requests | 60s per admin |
+| Bulk import | 5 requests | 60s per user |
+
+### Error Handling
+- **try/catch** around every Prisma mutation across all API routes
+- Generic error messages returned to client — no Prisma schema details leaked
+- Internal errors return structured `{ error: string }` JSON with appropriate HTTP status codes
 
 ### Data Protection
 - **HTML escaping** on all user-controlled content in email templates (prevents XSS/phishing injection)
@@ -229,7 +257,9 @@ Tests cover: login page, auth redirects, API protection, PWA manifest, RTL layou
 
 ### HTTP Security Headers
 Configured in `next.config.ts`:
-- `Strict-Transport-Security` (HSTS with preload)
+- `Content-Security-Policy` — restricts script, style, img, connect, and frame sources
+- `Cross-Origin-Opener-Policy: same-origin-allow-popups`
+- `Strict-Transport-Security` (HSTS with preload, 2-year max-age)
 - `X-Content-Type-Options: nosniff`
 - `X-Frame-Options: DENY`
 - `Referrer-Policy: strict-origin-when-cross-origin`
