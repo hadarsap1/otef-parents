@@ -52,22 +52,26 @@ export async function POST(req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "Already a member" }, { status: 409 });
   }
 
-  const member = await prisma.schoolMember.create({
-    data: { schoolId, userId: user.id, role: memberRole },
-    include: {
-      user: { select: { id: true, name: true, email: true, image: true } },
-    },
-  });
-
-  // Upgrade user role if they're a PARENT
-  if (user.role === "PARENT") {
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { role: memberRole },
+  try {
+    const member = await prisma.schoolMember.create({
+      data: { schoolId, userId: user.id, role: memberRole },
+      include: {
+        user: { select: { id: true, name: true, email: true, image: true } },
+      },
     });
-  }
 
-  return NextResponse.json(member, { status: 201 });
+    // Upgrade user role if they're a PARENT
+    if (user.role === "PARENT") {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { role: memberRole },
+      });
+    }
+
+    return NextResponse.json(member, { status: 201 });
+  } catch {
+    return NextResponse.json({ error: "Failed to add member" }, { status: 500 });
+  }
 }
 
 // DELETE /api/schools/:schoolId/members - remove a member
@@ -90,9 +94,13 @@ export async function DELETE(req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "Cannot remove school owner" }, { status: 403 });
   }
 
-  await prisma.schoolMember.deleteMany({
-    where: { schoolId, userId },
-  });
+  try {
+    await prisma.schoolMember.deleteMany({
+      where: { schoolId, userId },
+    });
 
-  return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true });
+  } catch {
+    return NextResponse.json({ error: "Failed to remove member" }, { status: 500 });
+  }
 }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireRole, teacherFilter } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { sanitizeString, isValidUrl } from "@/lib/validation";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -12,8 +13,18 @@ export async function POST(req: NextRequest, { params }: Params) {
   const { id } = await params;
   const { subject, startTime, endTime, zoomUrl, notes } = await req.json();
 
-  if (!subject || !startTime || !endTime) {
+  const sanitizedSubject = sanitizeString(subject, 200);
+  const sanitizedStartTime = sanitizeString(startTime, 20);
+  const sanitizedEndTime = sanitizeString(endTime, 20);
+  const sanitizedNotes = sanitizeString(notes, 2000);
+
+  if (!sanitizedSubject || !sanitizedStartTime || !sanitizedEndTime) {
     return NextResponse.json({ error: "subject, startTime, endTime are required" }, { status: 400 });
+  }
+
+  const sanitizedZoomUrl = sanitizeString(zoomUrl, 500);
+  if (sanitizedZoomUrl && !isValidUrl(sanitizedZoomUrl)) {
+    return NextResponse.json({ error: "Invalid Zoom URL" }, { status: 400 });
   }
 
   // Verify teacher owns this group (SUPERADMIN sees all)
@@ -31,17 +42,21 @@ export async function POST(req: NextRequest, { params }: Params) {
   }
 
   // Create a ScheduleItem for each child in the group
-  const items = await prisma.scheduleItem.createMany({
-    data: group.members.map((m) => ({
-      subject: subject.trim(),
-      startTime: new Date(startTime),
-      endTime: new Date(endTime),
-      zoomUrl: zoomUrl?.trim() || null,
-      notes: notes?.trim() || null,
-      childId: m.childId,
-      groupId: id,
-    })),
-  });
+  try {
+    const items = await prisma.scheduleItem.createMany({
+      data: group.members.map((m) => ({
+        subject: sanitizedSubject,
+        startTime: new Date(sanitizedStartTime),
+        endTime: new Date(sanitizedEndTime),
+        zoomUrl: sanitizedZoomUrl,
+        notes: sanitizedNotes,
+        childId: m.childId,
+        groupId: id,
+      })),
+    });
 
-  return NextResponse.json({ created: items.count }, { status: 201 });
+    return NextResponse.json({ created: items.count }, { status: 201 });
+  } catch {
+    return NextResponse.json({ error: "Failed to create schedule items" }, { status: 500 });
+  }
 }

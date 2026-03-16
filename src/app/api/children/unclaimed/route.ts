@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { sanitizeString } from "@/lib/validation";
 
 const SYSTEM_EMAIL = "system@otef-parents.app";
 
@@ -93,7 +94,8 @@ export async function POST(req: NextRequest) {
   }
 
   const { childId } = await req.json();
-  if (!childId) {
+  const sanitizedChildId = sanitizeString(childId, 30);
+  if (!sanitizedChildId) {
     return NextResponse.json({ error: "childId is required" }, { status: 400 });
   }
 
@@ -107,7 +109,7 @@ export async function POST(req: NextRequest) {
 
   // Verify the child belongs to system user (is unclaimed)
   const child = await prisma.child.findFirst({
-    where: { id: childId, parentId: systemUser.id },
+    where: { id: sanitizedChildId, parentId: systemUser.id },
   });
 
   if (!child) {
@@ -117,7 +119,7 @@ export async function POST(req: NextRequest) {
   // Check if this user already claimed this child
   const alreadyClaimed = await prisma.child.findFirst({
     where: {
-      id: childId,
+      id: sanitizedChildId,
       OR: [
         { parentId: session.user.id },
         { childParents: { some: { userId: session.user.id } } },
@@ -130,10 +132,14 @@ export async function POST(req: NextRequest) {
   }
 
   // Transfer ownership
-  const updated = await prisma.child.update({
-    where: { id: childId },
-    data: { parentId: session.user.id },
-  });
+  try {
+    const updated = await prisma.child.update({
+      where: { id: sanitizedChildId },
+      data: { parentId: session.user.id },
+    });
 
-  return NextResponse.json(updated);
+    return NextResponse.json(updated);
+  } catch {
+    return NextResponse.json({ error: "Failed to claim child" }, { status: 500 });
+  }
 }

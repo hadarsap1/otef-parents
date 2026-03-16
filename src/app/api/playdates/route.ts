@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { sanitizeString } from "@/lib/validation";
 
 // GET /api/playdates - list playdates for groups the parent's children belong to
 export async function GET() {
@@ -66,7 +67,11 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const { groupId, address, dateTime, endTime, maxCapacity, notes } = body;
 
-  if (!groupId || !address || !dateTime || !maxCapacity) {
+  const sanitizedGroupId = sanitizeString(groupId, 30);
+  const sanitizedAddress = sanitizeString(address, 500);
+  const sanitizedNotes = sanitizeString(notes, 2000);
+
+  if (!sanitizedGroupId || !sanitizedAddress || !dateTime || !maxCapacity) {
     return NextResponse.json(
       { error: "groupId, address, dateTime, and maxCapacity are required" },
       { status: 400 }
@@ -83,7 +88,7 @@ export async function POST(req: NextRequest) {
   // Verify parent has a child in this group
   const membership = await prisma.groupMember.findFirst({
     where: {
-      groupId,
+      groupId: sanitizedGroupId,
       child: {
         OR: [
           { parentId: session.user.id },
@@ -100,17 +105,21 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const playdate = await prisma.playdate.create({
-    data: {
-      hostId: session.user.id,
-      groupId,
-      address: address.trim(),
-      dateTime: new Date(dateTime),
-      endTime: endTime?.trim() || null,
-      maxCapacity: Number(maxCapacity),
-      notes: notes?.trim() || null,
-    },
-  });
+  try {
+    const playdate = await prisma.playdate.create({
+      data: {
+        hostId: session.user.id,
+        groupId: sanitizedGroupId,
+        address: sanitizedAddress,
+        dateTime: new Date(dateTime),
+        endTime: endTime?.trim() || null,
+        maxCapacity: Number(maxCapacity),
+        notes: sanitizedNotes,
+      },
+    });
 
-  return NextResponse.json(playdate, { status: 201 });
+    return NextResponse.json(playdate, { status: 201 });
+  } catch {
+    return NextResponse.json({ error: "Failed to create playdate" }, { status: 500 });
+  }
 }

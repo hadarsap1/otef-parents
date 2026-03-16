@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { sanitizeString } from "@/lib/validation";
 
 // GET /api/events - list personal events for the current user
 export async function GET(req: NextRequest) {
@@ -28,24 +29,34 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const { title, date, startTime, endTime, notes, emoji } = body;
 
-  if (!title?.trim() || !date) {
+  const sanitizedTitle = sanitizeString(title, 200);
+  const sanitizedNotes = sanitizeString(notes, 2000);
+  const sanitizedStartTime = sanitizeString(startTime, 20);
+  const sanitizedEndTime = sanitizeString(endTime, 20);
+  const sanitizedEmoji = sanitizeString(emoji, 10);
+
+  if (!sanitizedTitle || !date) {
     return NextResponse.json(
       { error: "title and date are required" },
       { status: 400 }
     );
   }
 
-  const event = await prisma.personalEvent.create({
-    data: {
-      title: title.trim(),
-      date: new Date(date),
-      startTime: startTime || null,
-      endTime: endTime || null,
-      notes: notes?.trim() || null,
-      emoji: emoji || null,
-      userId: session.user.id,
-    },
-  });
+  try {
+    const event = await prisma.personalEvent.create({
+      data: {
+        title: sanitizedTitle,
+        date: new Date(date),
+        startTime: sanitizedStartTime,
+        endTime: sanitizedEndTime,
+        notes: sanitizedNotes,
+        emoji: sanitizedEmoji,
+        userId: session.user.id,
+      },
+    });
 
-  return NextResponse.json(event, { status: 201 });
+    return NextResponse.json(event, { status: 201 });
+  } catch {
+    return NextResponse.json({ error: "Failed to create event" }, { status: 500 });
+  }
 }

@@ -27,14 +27,18 @@ export async function POST(_req: NextRequest, { params }: Params) {
   const code = generateCode();
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
-  const invite = await prisma.groupInvite.create({
-    data: {
-      code,
-      groupId: id,
-      createdByUserId: session.user.id,
-      expiresAt,
-    },
-  });
+  try {
+    const invite = await prisma.groupInvite.create({
+      data: {
+        code,
+        groupId: id,
+        createdByUserId: session.user.id,
+        expiresAt,
+      },
+    });
 
-  return NextResponse.json({ code: invite.code, expiresAt: invite.expiresAt }, { status: 201 });
+    return NextResponse.json({ code: invite.code, expiresAt: invite.expiresAt }, { status: 201 });
+  } catch {
+    return NextResponse.json({ error: "Failed to generate invite code" }, { status: 500 });
+  }
 }

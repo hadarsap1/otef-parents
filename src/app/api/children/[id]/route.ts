@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { sanitizeString } from "@/lib/validation";
 
 // Helper: check if user has any access to a child (owner or linked)
 async function getChildAccess(childId: string, userId: string) {
@@ -39,16 +40,20 @@ export async function PUT(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const child = await prisma.child.update({
-    where: { id },
-    data: {
-      ...(name && { name: name.trim() }),
-      ...(grade !== undefined && { grade: grade?.trim() || null }),
-      ...(className !== undefined && { className: className?.trim() || null }),
-    },
-  });
+  try {
+    const child = await prisma.child.update({
+      where: { id },
+      data: {
+        ...(name && { name: sanitizeString(name, 200) ?? name.trim() }),
+        ...(grade !== undefined && { grade: sanitizeString(grade, 50) }),
+        ...(className !== undefined && { className: sanitizeString(className, 50) }),
+      },
+    });
 
-  return NextResponse.json(child);
+    return NextResponse.json(child);
+  } catch {
+    return NextResponse.json({ error: "Failed to update child" }, { status: 500 });
+  }
 }
 
 // DELETE /api/children/[id] - delete a child (only the OWNER can delete)

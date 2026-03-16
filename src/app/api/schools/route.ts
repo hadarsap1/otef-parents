@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { slugify } from "@/lib/utils";
+import { sanitizeString } from "@/lib/validation";
 
 // GET /api/schools - list current user's schools
 export async function GET() {
@@ -51,11 +52,14 @@ export async function POST(req: NextRequest) {
 
   const { name, description } = await req.json();
 
-  if (!name || typeof name !== "string" || name.trim().length === 0) {
+  const sanitizedName = sanitizeString(name, 200);
+  const sanitizedDescription = sanitizeString(description, 2000);
+
+  if (!sanitizedName) {
     return NextResponse.json({ error: "Name is required" }, { status: 400 });
   }
 
-  const slug = slugify(name);
+  const slug = slugify(sanitizedName);
   if (!slug) {
     return NextResponse.json({ error: "Invalid name for slug" }, { status: 400 });
   }
@@ -66,19 +70,23 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Slug already taken" }, { status: 409 });
   }
 
-  const school = await prisma.school.create({
-    data: {
-      name: name.trim(),
-      slug,
-      description: description?.trim() || null,
-      members: {
-        create: {
-          userId: session.user.id,
-          role: "OWNER",
+  try {
+    const school = await prisma.school.create({
+      data: {
+        name: sanitizedName,
+        slug,
+        description: sanitizedDescription,
+        members: {
+          create: {
+            userId: session.user.id,
+            role: "OWNER",
+          },
         },
       },
-    },
-  });
+    });
 
-  return NextResponse.json(school, { status: 201 });
+    return NextResponse.json(school, { status: 201 });
+  } catch {
+    return NextResponse.json({ error: "Failed to create school" }, { status: 500 });
+  }
 }

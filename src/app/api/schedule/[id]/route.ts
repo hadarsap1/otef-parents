@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { deleteFromGoogleCalendar } from "@/lib/google-calendar";
+import { sanitizeString, isValidUrl } from "@/lib/validation";
 
 // PUT /api/schedule/[id] - update a schedule item
 export async function PUT(
@@ -40,20 +41,31 @@ export async function PUT(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const item = await prisma.scheduleItem.update({
-    where: { id },
-    data: {
-      ...(body.subject && { subject: body.subject.trim() }),
-      ...(body.startTime && { startTime: new Date(body.startTime) }),
-      ...(body.endTime && { endTime: new Date(body.endTime) }),
-      ...(body.zoomUrl !== undefined && {
-        zoomUrl: body.zoomUrl?.trim() || null,
-      }),
-      ...(body.notes !== undefined && { notes: body.notes?.trim() || null }),
-    },
-  });
+  if (body.zoomUrl !== undefined && body.zoomUrl !== null && body.zoomUrl !== "") {
+    const sanitizedZoomUrl = sanitizeString(body.zoomUrl, 500);
+    if (sanitizedZoomUrl && !isValidUrl(sanitizedZoomUrl)) {
+      return NextResponse.json({ error: "Invalid Zoom URL" }, { status: 400 });
+    }
+  }
 
-  return NextResponse.json(item);
+  try {
+    const item = await prisma.scheduleItem.update({
+      where: { id },
+      data: {
+        ...(body.subject && { subject: sanitizeString(body.subject, 200) ?? body.subject.trim() }),
+        ...(body.startTime && { startTime: new Date(body.startTime) }),
+        ...(body.endTime && { endTime: new Date(body.endTime) }),
+        ...(body.zoomUrl !== undefined && {
+          zoomUrl: sanitizeString(body.zoomUrl, 500),
+        }),
+        ...(body.notes !== undefined && { notes: sanitizeString(body.notes, 2000) }),
+      },
+    });
+
+    return NextResponse.json(item);
+  } catch {
+    return NextResponse.json({ error: "Failed to update schedule item" }, { status: 500 });
+  }
 }
 
 // DELETE /api/schedule/[id] - delete a schedule item

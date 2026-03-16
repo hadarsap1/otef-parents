@@ -135,10 +135,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid type" }, { status: 400 });
   }
 
-  const googleEventId = await addToGoogleCalendar(
-    session.user.id,
-    calendarEvent
-  );
+  let googleEventId: string | null;
+  try {
+    googleEventId = await addToGoogleCalendar(session.user.id, calendarEvent);
+  } catch {
+    return NextResponse.json(
+      { error: "Failed to add to Google Calendar" },
+      { status: 500 }
+    );
+  }
 
   if (!googleEventId) {
     return NextResponse.json(
@@ -148,16 +153,20 @@ export async function POST(req: NextRequest) {
   }
 
   // Persist googleEventId back to the source record
-  switch (type) {
-    case "personal":
-      await prisma.personalEvent.update({ where: { id }, data: { googleEventId } });
-      break;
-    case "lesson":
-      await prisma.scheduleItem.update({ where: { id }, data: { googleEventId } });
-      break;
-    case "playdate":
-      await prisma.playdate.update({ where: { id }, data: { googleEventId } });
-      break;
+  try {
+    switch (type) {
+      case "personal":
+        await prisma.personalEvent.update({ where: { id }, data: { googleEventId } });
+        break;
+      case "lesson":
+        await prisma.scheduleItem.update({ where: { id }, data: { googleEventId } });
+        break;
+      case "playdate":
+        await prisma.playdate.update({ where: { id }, data: { googleEventId } });
+        break;
+    }
+  } catch {
+    return NextResponse.json({ error: "Failed to save calendar event reference" }, { status: 500 });
   }
 
   return NextResponse.json({ googleEventId });

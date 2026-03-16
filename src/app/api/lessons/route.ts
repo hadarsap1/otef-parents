@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions, requireRole, teacherFilter } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { sanitizeString, isValidUrl } from "@/lib/validation";
 
 // GET /api/lessons - list lessons
 // Parents: upcoming lessons for groups their children belong to (filtered by sub-group membership)
@@ -99,64 +100,80 @@ export async function POST(req: NextRequest) {
   const { title, date, startTime, endTime, groupId, zoomLink, notes, recurrence, subGroupMode, subGroups } =
     await req.json();
 
-  if (!title?.trim() || !date || !startTime || !endTime) {
+  const sanitizedTitle = sanitizeString(title, 200);
+  const sanitizedStartTime = sanitizeString(startTime, 20);
+  const sanitizedEndTime = sanitizeString(endTime, 20);
+  const sanitizedZoomLink = sanitizeString(zoomLink, 500);
+  const sanitizedNotes = sanitizeString(notes, 2000);
+  const sanitizedGroupId = sanitizeString(groupId, 30);
+
+  if (!sanitizedTitle || !date || !sanitizedStartTime || !sanitizedEndTime) {
     return NextResponse.json(
       { error: "title, date, startTime, endTime are required" },
       { status: 400 }
     );
   }
 
+  if (sanitizedZoomLink && !isValidUrl(sanitizedZoomLink)) {
+    return NextResponse.json({ error: "Invalid Zoom link" }, { status: 400 });
+  }
+
   const validRecurrence = ["ONCE", "DAILY", "WEEKLY"].includes(recurrence) ? recurrence : "ONCE";
 
   // If groupId provided, verify teacher owns the group
-  if (groupId) {
+  if (sanitizedGroupId) {
     const group = await prisma.group.findFirst({
-      where: { id: groupId, ...teacherFilter(session) },
+      where: { id: sanitizedGroupId, ...teacherFilter(session) },
     });
     if (!group) {
       return NextResponse.json({ error: "Group not found" }, { status: 404 });
     }
   }
 
-  const hasSubGroups = Array.isArray(subGroups) && subGroups.length > 0;
+  const cappedSubGroups = Array.isArray(subGroups) ? subGroups.slice(0, 20) : subGroups;
+  const hasSubGroups = Array.isArray(cappedSubGroups) && cappedSubGroups.length > 0;
 
-  const lesson = await prisma.lesson.create({
-    data: {
-      title: title.trim(),
-      date: new Date(date),
-      startTime,
-      endTime,
-      recurrence: validRecurrence,
-      teacherId: session.user.id,
-      groupId: groupId || null,
-      zoomLink: zoomLink?.trim() || null,
-      notes: notes?.trim() || null,
-      hasSubGroups,
-      subGroupMode: hasSubGroups && ["MANUAL", "TIMESLOTS"].includes(subGroupMode) ? subGroupMode : "MANUAL",
-      ...(hasSubGroups && {
+  try {
+    const lesson = await prisma.lesson.create({
+      data: {
+        title: sanitizedTitle,
+        date: new Date(date),
+        startTime: sanitizedStartTime,
+        endTime: sanitizedEndTime,
+        recurrence: validRecurrence,
+        teacherId: session.user.id,
+        groupId: sanitizedGroupId,
+        zoomLink: sanitizedZoomLink,
+        notes: sanitizedNotes,
+        hasSubGroups,
+        subGroupMode: hasSubGroups && ["MANUAL", "TIMESLOTS"].includes(subGroupMode) ? subGroupMode : "MANUAL",
+        ...(hasSubGroups && {
+          subGroups: {
+            create: cappedSubGroups.map((sg: { name: string; startTime: string; endTime: string; maxCapacity?: number; childIds?: string[] }) => ({
+              name: sanitizeString(sg.name, 200) ?? sg.name,
+              startTime: sanitizeString(sg.startTime, 20) ?? sg.startTime,
+              endTime: sanitizeString(sg.endTime, 20) ?? sg.endTime,
+              maxCapacity: sg.maxCapacity ?? null,
+              ...(sg.childIds?.length && {
+                members: {
+                  create: sg.childIds.map((childId: string) => ({ childId: sanitizeString(childId, 30) ?? childId })),
+                },
+              }),
+            })),
+          },
+        }),
+      },
+      include: {
         subGroups: {
-          create: subGroups.map((sg: { name: string; startTime: string; endTime: string; maxCapacity?: number; childIds?: string[] }) => ({
-            name: sg.name,
-            startTime: sg.startTime,
-            endTime: sg.endTime,
-            maxCapacity: sg.maxCapacity ?? null,
-            ...(sg.childIds?.length && {
-              members: {
-                create: sg.childIds.map((childId: string) => ({ childId })),
-              },
-            }),
-          })),
-        },
-      }),
-    },
-    include: {
-      subGroups: {
-        include: {
-          members: { include: { child: { select: { id: true, name: true } } } },
+          include: {
+            members: { include: { child: { select: { id: true, name: true } } } },
+          },
         },
       },
-    },
-  });
+    });
 
-  return NextResponse.json(lesson, { status: 201 });
+    return NextResponse.json(lesson, { status: 201 });
+  } catch {
+    return NextResponse.json({ error: "Failed to create lesson" }, { status: 500 });
+  }
 }

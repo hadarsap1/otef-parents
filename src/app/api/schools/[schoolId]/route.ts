@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireSchoolRole } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { slugify } from "@/lib/utils";
+import { sanitizeString } from "@/lib/validation";
 
 type Params = { params: Promise<{ schoolId: string }> };
 
@@ -34,9 +35,10 @@ export async function PUT(req: NextRequest, { params }: Params) {
   const { name, description } = await req.json();
 
   const data: Record<string, unknown> = {};
-  if (name?.trim()) {
-    data.name = name.trim();
-    const newSlug = slugify(name.trim());
+  const sanitizedName = sanitizeString(name, 200);
+  if (sanitizedName) {
+    data.name = sanitizedName;
+    const newSlug = slugify(sanitizedName);
     if (!newSlug) {
       return NextResponse.json({ error: "Invalid name for slug" }, { status: 400 });
     }
@@ -50,11 +52,15 @@ export async function PUT(req: NextRequest, { params }: Params) {
     data.slug = newSlug;
   }
   if (description !== undefined) {
-    data.description = description?.trim() || null;
+    data.description = sanitizeString(description, 2000);
   }
 
-  const updated = await prisma.school.update({ where: { id: schoolId }, data });
-  return NextResponse.json(updated);
+  try {
+    const updated = await prisma.school.update({ where: { id: schoolId }, data });
+    return NextResponse.json(updated);
+  } catch {
+    return NextResponse.json({ error: "Failed to update school" }, { status: 500 });
+  }
 }
 
 // DELETE /api/schools/:schoolId - delete school

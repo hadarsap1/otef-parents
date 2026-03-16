@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { sanitizeString } from "@/lib/validation";
 
 // GET /api/children - list current user's children
 export async function GET() {
@@ -34,18 +35,26 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const { name, grade, className } = body;
 
-  if (!name || typeof name !== "string" || name.trim().length === 0) {
+  const sanitizedName = sanitizeString(name, 200);
+  const sanitizedGrade = sanitizeString(grade, 50);
+  const sanitizedClassName = sanitizeString(className, 50);
+
+  if (!sanitizedName) {
     return NextResponse.json({ error: "Name is required" }, { status: 400 });
   }
 
-  const child = await prisma.child.create({
-    data: {
-      name: name.trim(),
-      grade: grade?.trim() || null,
-      className: className?.trim() || null,
-      parentId: session.user.id,
-    },
-  });
+  try {
+    const child = await prisma.child.create({
+      data: {
+        name: sanitizedName,
+        grade: sanitizedGrade,
+        className: sanitizedClassName,
+        parentId: session.user.id,
+      },
+    });
 
-  return NextResponse.json(child, { status: 201 });
+    return NextResponse.json(child, { status: 201 });
+  } catch {
+    return NextResponse.json({ error: "Failed to create child" }, { status: 500 });
+  }
 }

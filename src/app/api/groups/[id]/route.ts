@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireRole, teacherFilter } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { sanitizeString } from "@/lib/validation";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -45,15 +46,19 @@ export async function PUT(req: NextRequest, { params }: Params) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  const updated = await prisma.group.update({
-    where: { id },
-    data: {
-      ...(name && { name: name.trim() }),
-      ...(description !== undefined && { description: description?.trim() || null }),
-    },
-  });
+  try {
+    const updated = await prisma.group.update({
+      where: { id },
+      data: {
+        ...(name && { name: sanitizeString(name, 200) ?? name.trim() }),
+        ...(description !== undefined && { description: sanitizeString(description, 2000) }),
+      },
+    });
 
-  return NextResponse.json(updated);
+    return NextResponse.json(updated);
+  } catch {
+    return NextResponse.json({ error: "Failed to update group" }, { status: 500 });
+  }
 }
 
 // DELETE /api/groups/:id - delete group

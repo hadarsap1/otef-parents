@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { sanitizeString } from "@/lib/validation";
 
 export async function GET() {
   const { error } = await requireRole("SUPERADMIN");
@@ -41,15 +42,21 @@ export async function PUT(req: Request) {
 
   const { userId, role } = await req.json();
 
-  if (!userId || !["PARENT", "TEACHER", "ADMIN", "SUPERADMIN"].includes(role)) {
+  const sanitizedUserId = sanitizeString(userId, 30);
+
+  if (!sanitizedUserId || !["PARENT", "TEACHER", "ADMIN", "SUPERADMIN"].includes(role)) {
     return NextResponse.json({ error: "Invalid input" }, { status: 400 });
   }
 
-  const user = await prisma.user.update({
-    where: { id: userId },
-    data: { role },
-    select: { id: true, name: true, role: true },
-  });
+  try {
+    const user = await prisma.user.update({
+      where: { id: sanitizedUserId },
+      data: { role },
+      select: { id: true, name: true, role: true },
+    });
 
-  return NextResponse.json(user);
+    return NextResponse.json(user);
+  } catch {
+    return NextResponse.json({ error: "Failed to update user" }, { status: 500 });
+  }
 }
