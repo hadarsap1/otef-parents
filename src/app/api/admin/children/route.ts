@@ -1,15 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-
-async function requireAdmin() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) return null;
-  const user = await prisma.user.findUnique({ where: { id: session.user.id } });
-  if (!user || user.role !== "SUPERADMIN") return null;
-  return user;
-}
+import { rateLimit } from "@/lib/rate-limit";
 
 // GET /api/admin/children?q=searchTerm&excludeGroupId=xxx&parentId=xxx
 export async function GET(req: NextRequest) {
@@ -18,8 +10,13 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // Rate limit: 30 searches per minute per admin
+  if (rateLimit(`admin-children-${admin.id}`, 30)) {
+    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+  }
+
   const { searchParams } = new URL(req.url);
-  const q = searchParams.get("q") ?? "";
+  const q = (searchParams.get("q") ?? "").slice(0, 100); // cap search length
   const excludeGroupId = searchParams.get("excludeGroupId");
   const parentId = searchParams.get("parentId");
 

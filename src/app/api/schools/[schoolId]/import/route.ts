@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireSchoolRole } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { rateLimit } from "@/lib/rate-limit";
 
 type Params = { params: Promise<{ schoolId: string }> };
 
@@ -17,6 +18,11 @@ export async function POST(req: NextRequest, { params }: Params) {
   const { schoolId } = await params;
   const { error, session } = await requireSchoolRole(schoolId, "OWNER", "ADMIN");
   if (error) return error;
+
+  // Rate limit: 5 imports per minute per user
+  if (rateLimit(`import-${session!.user.id}`, 5)) {
+    return NextResponse.json({ error: "Too many import requests" }, { status: 429 });
+  }
 
   const { children } = (await req.json()) as { children: ImportChild[] };
 

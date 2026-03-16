@@ -2,12 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { rateLimit } from "@/lib/rate-limit";
 
 // POST /api/groups/invite/redeem - parent joins a child to a group via invite code
 export async function POST(req: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Rate limit: 10 attempts per minute per user (brute-force protection)
+  if (rateLimit(`group-invite-${session.user.id}`, 10)) {
+    return NextResponse.json({ error: "Too many attempts" }, { status: 429 });
   }
 
   const { code, childId } = await req.json();

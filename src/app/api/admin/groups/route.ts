@@ -1,15 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-
-async function requireAdmin() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) return null;
-  const user = await prisma.user.findUnique({ where: { id: session.user.id } });
-  if (!user || user.role !== "SUPERADMIN") return null;
-  return user;
-}
+import { sanitizeString } from "@/lib/validation";
 
 // GET /api/admin/groups - returns all groups with members
 export async function GET() {
@@ -43,33 +35,40 @@ export async function GET() {
   return NextResponse.json(groups);
 }
 
-// PUT /api/admin/groups - update group name
+// PUT /api/admin/groups - update group name or school
 export async function PUT(req: NextRequest) {
   const admin = await requireAdmin();
   if (!admin) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { groupId, name, schoolId } = await req.json();
+  const body = await req.json();
+  const groupId = sanitizeString(body.groupId, 30);
   if (!groupId) {
     return NextResponse.json({ error: "groupId required" }, { status: 400 });
   }
 
   const data: { name?: string; schoolId?: string | null } = {};
-  if (name?.trim()) data.name = name.trim();
-  if (schoolId !== undefined) data.schoolId = schoolId || null;
+  const name = sanitizeString(body.name, 200);
+  if (name) data.name = name;
+  if (body.schoolId !== undefined) {
+    data.schoolId = sanitizeString(body.schoolId, 30) || null;
+  }
 
   if (Object.keys(data).length === 0) {
     return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
   }
 
-  const group = await prisma.group.update({
-    where: { id: groupId },
-    data,
-    include: { school: { select: { id: true, name: true } } },
-  });
-
-  return NextResponse.json(group);
+  try {
+    const group = await prisma.group.update({
+      where: { id: groupId },
+      data,
+      include: { school: { select: { id: true, name: true } } },
+    });
+    return NextResponse.json(group);
+  } catch {
+    return NextResponse.json({ error: "Group not found" }, { status: 404 });
+  }
 }
 
 // DELETE /api/admin/groups - remove a child from a group

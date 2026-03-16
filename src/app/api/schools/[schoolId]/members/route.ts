@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireSchoolRole } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { isValidEmail } from "@/lib/validation";
 
 type Params = { params: Promise<{ schoolId: string }> };
 
@@ -29,8 +30,8 @@ export async function POST(req: NextRequest, { params }: Params) {
 
   const { email, role } = await req.json();
 
-  if (!email) {
-    return NextResponse.json({ error: "Email is required" }, { status: 400 });
+  if (!isValidEmail(email)) {
+    return NextResponse.json({ error: "Valid email is required" }, { status: 400 });
   }
 
   // Only OWNER can assign ADMIN; default to TEACHER

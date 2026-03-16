@@ -118,3 +118,13 @@ export async function requireSchoolRole(schoolId: string, ...roles: SchoolRole[]
   }
   return { error: null, session };
 }
+
+// Centralized admin check — replaces duplicated requireAdmin() in admin routes
+// Book ref: Chapter "Access Control & Authorization" — single source of truth
+export async function requireAdmin() {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) return null;
+  const user = await prisma.user.findUnique({ where: { id: session.user.id } });
+  if (!user || user.role !== "SUPERADMIN") return null;
+  return user;
+}
