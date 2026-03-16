@@ -4,8 +4,9 @@ import { useEffect, useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Users, BookOpen, UsersRound, GraduationCap, RotateCcw, Trash2, Pencil, ChevronDown, ChevronUp, UserRound, School, Search, AlertTriangle } from "lucide-react";
+import { Users, BookOpen, UsersRound, GraduationCap, RotateCcw, Trash2, Pencil, ChevronDown, ChevronUp, UserRound, School, Search, AlertTriangle, Plus, Loader2 } from "lucide-react";
 import { LoadingState } from "@/components/ui/loading-state";
 import {
   Dialog,
@@ -107,6 +108,24 @@ export function AdminPanel() {
   const [deleteSchoolDialog, setDeleteSchoolDialog] = useState<{ id: string; name: string } | null>(null);
   const [deletingSchool, setDeletingSchool] = useState(false);
   const [expandedSchools, setExpandedSchools] = useState<Set<string>>(new Set());
+
+  // Add staff / child dialogs
+  const [addStaffDialog, setAddStaffDialog] = useState<{ schoolId: string; schoolName: string } | null>(null);
+  const [addStaffEmail, setAddStaffEmail] = useState("");
+  const [addStaffRole, setAddStaffRole] = useState("TEACHER");
+  const [addStaffError, setAddStaffError] = useState("");
+  const [addStaffLoading, setAddStaffLoading] = useState(false);
+
+  const [addChildDialog, setAddChildDialog] = useState<{ groupId: string; groupName: string } | null>(null);
+  const [childSearchQuery, setChildSearchQuery] = useState("");
+  const [childSearchResults, setChildSearchResults] = useState<{ id: string; name: string; grade: string | null; parent: { id: string; name: string | null; email: string | null } }[]>([]);
+  const [childSearchLoading, setChildSearchLoading] = useState(false);
+  const [addChildLoading, setAddChildLoading] = useState(false);
+  const [addChildError, setAddChildError] = useState("");
+
+  // Assign unaffiliated loading
+  const [assigningUser, setAssigningUser] = useState<string | null>(null);
+  const [assigningGroup, setAssigningGroup] = useState<string | null>(null);
 
   useEffect(() => {
     Promise.all([
@@ -337,6 +356,147 @@ export function AdminPanel() {
     setDeleteSchoolDialog(null);
   }
 
+  async function handleAddStaff() {
+    if (!addStaffDialog || !addStaffEmail.trim()) return;
+    setAddStaffLoading(true);
+    setAddStaffError("");
+    const res = await fetch(`/api/schools/${addStaffDialog.schoolId}/members`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: addStaffEmail.trim(), role: addStaffRole }),
+    });
+    if (res.ok) {
+      const member = await res.json();
+      // Update users state - add school membership, handle role upgrade
+      setUsers((prev) => {
+        const existing = prev.find((u) => u.id === member.user.id);
+        if (existing) {
+          return prev.map((u) =>
+            u.id === member.user.id
+              ? {
+                  ...u,
+                  role: u.role === "PARENT" ? "TEACHER" : u.role,
+                  schoolMemberships: [
+                    ...u.schoolMemberships,
+                    { role: addStaffRole, school: { id: addStaffDialog.schoolId, name: addStaffDialog.schoolName } },
+                  ],
+                }
+              : u
+          );
+        }
+        return prev;
+      });
+      setAddStaffDialog(null);
+      setAddStaffEmail("");
+      setAddStaffRole("TEACHER");
+    } else {
+      const data = await res.json();
+      if (res.status === 404) setAddStaffError("משתמש לא נמצא");
+      else if (res.status === 409) setAddStaffError("המשתמש כבר חבר בבית הספר");
+      else setAddStaffError(data.error || "שגיאה");
+    }
+    setAddStaffLoading(false);
+  }
+
+  async function handleAddChildToGroup(childId: string) {
+    if (!addChildDialog) return;
+    setAddChildLoading(true);
+    setAddChildError("");
+    const res = await fetch("/api/admin/groups/members", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ groupId: addChildDialog.groupId, childId }),
+    });
+    if (res.ok) {
+      const member = await res.json();
+      setGroups((prev) =>
+        prev.map((g) =>
+          g.id === addChildDialog.groupId
+            ? {
+                ...g,
+                members: [...g.members, member],
+                _count: { ...g._count, members: g._count.members + 1 },
+              }
+            : g
+        )
+      );
+      setAddChildDialog(null);
+      setChildSearchQuery("");
+      setChildSearchResults([]);
+    } else {
+      const data = await res.json();
+      if (res.status === 409) setAddChildError("הילד כבר בכיתה");
+      else setAddChildError(data.error || "שגיאה");
+    }
+    setAddChildLoading(false);
+  }
+
+  async function handleAssignGroupToSchool(groupId: string, schoolId: string) {
+    setAssigningGroup(groupId);
+    const res = await fetch("/api/admin/groups", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ groupId, schoolId }),
+    });
+    if (res.ok) {
+      const updated = await res.json();
+      setGroups((prev) =>
+        prev.map((g) =>
+          g.id === groupId ? { ...g, school: updated.school } : g
+        )
+      );
+    }
+    setAssigningGroup(null);
+  }
+
+  async function handleAssignUserToSchool(userEmail: string, schoolId: string) {
+    const user = users.find((u) => u.email === userEmail);
+    if (!user) return;
+    setAssigningUser(user.id);
+    const res = await fetch(`/api/schools/${schoolId}/members`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: userEmail }),
+    });
+    if (res.ok) {
+      const school = schools.find((s) => s.id === schoolId);
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.id === user.id
+            ? {
+                ...u,
+                role: u.role === "PARENT" ? "TEACHER" : u.role,
+                schoolMemberships: [
+                  ...u.schoolMemberships,
+                  { role: "TEACHER", school: { id: schoolId, name: school?.name ?? "" } },
+                ],
+              }
+            : u
+        )
+      );
+    }
+    setAssigningUser(null);
+  }
+
+  // Debounced child search
+  useEffect(() => {
+    if (!addChildDialog || childSearchQuery.length < 2) {
+      setChildSearchResults([]);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setChildSearchLoading(true);
+      const res = await fetch(
+        `/api/admin/children?q=${encodeURIComponent(childSearchQuery)}&excludeGroupId=${addChildDialog.groupId}`
+      );
+      if (res.ok) {
+        setChildSearchResults(await res.json());
+      }
+      setChildSearchLoading(false);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [childSearchQuery, addChildDialog]);
+
   if (loading) return <LoadingState />;
 
   return (
@@ -461,9 +621,25 @@ export function AdminPanel() {
                 {isExpanded && (
                   <CardContent className="px-4 pb-3 space-y-3">
                     {/* Staff section */}
-                    {staff.length > 0 && (
-                      <div>
-                        <p className="text-xs font-semibold text-muted-foreground mb-1.5">חברי צוות</p>
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <p className="text-xs font-semibold text-muted-foreground">חברי צוות</p>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          aria-label={`הוספת איש צוות ל${school.name}`}
+                          onClick={() => {
+                            setAddStaffDialog({ schoolId: school.id, schoolName: school.name });
+                            setAddStaffEmail("");
+                            setAddStaffRole("TEACHER");
+                            setAddStaffError("");
+                          }}
+                        >
+                          <Plus className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                      {staff.length > 0 && (
                         <div className="grid gap-1">
                           {staff.map((teacher) => (
                             <div
@@ -505,8 +681,8 @@ export function AdminPanel() {
                             </div>
                           ))}
                         </div>
-                      </div>
-                    )}
+                      )}
+                    </div>
 
                     {/* Classes section */}
                     {grps.length > 0 && (
@@ -549,18 +725,36 @@ export function AdminPanel() {
                                     <span className="text-[10px] text-muted-foreground">({group._count.members} ילדים)</span>
                                   </div>
                                 )}
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setEditingGroup(group.id);
-                                    setEditGroupName(group.name);
-                                  }}
-                                  aria-label={`עריכת שם כיתה ${group.name}`}
-                                >
-                                  <Pencil className="h-4 w-4" />
-                                </Button>
+                                <div className="flex items-center shrink-0">
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7"
+                                    aria-label={`הוספת ילד ל${group.name}`}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setAddChildDialog({ groupId: group.id, groupName: group.name });
+                                      setChildSearchQuery("");
+                                      setChildSearchResults([]);
+                                      setAddChildError("");
+                                    }}
+                                  >
+                                    <Plus className="h-3.5 w-3.5" />
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-7 w-7"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setEditingGroup(group.id);
+                                      setEditGroupName(group.name);
+                                    }}
+                                    aria-label={`עריכת שם כיתה ${group.name}`}
+                                  >
+                                    <Pencil className="h-4 w-4" />
+                                  </Button>
+                                </div>
                               </div>
 
                               {expandedGroup === group.id && (
@@ -670,9 +864,28 @@ export function AdminPanel() {
                                   <p className="text-[10px] text-muted-foreground truncate">{user.email}</p>
                                 </div>
                               </div>
-                              <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${ROLE_COLORS[user.role] ?? ""}`}>
-                                {ROLE_LABELS[user.role] ?? user.role}
-                              </span>
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${ROLE_COLORS[user.role] ?? ""}`}>
+                                  {ROLE_LABELS[user.role] ?? user.role}
+                                </span>
+                                <select
+                                  value=""
+                                  onChange={(e) => {
+                                    if (e.target.value && user.email) {
+                                      handleAssignUserToSchool(user.email, e.target.value);
+                                    }
+                                  }}
+                                  disabled={assigningUser === user.id}
+                                  dir="rtl"
+                                  aria-label={`העברת ${user.name ?? "משתמש"} לבית ספר`}
+                                  className="text-[10px] px-1.5 py-0.5 rounded border border-amber-300 bg-white cursor-pointer max-w-[120px]"
+                                >
+                                  <option value="">העבר לבית ספר...</option>
+                                  {schools.map((s) => (
+                                    <option key={s.id} value={s.id}>{s.name}</option>
+                                  ))}
+                                </select>
+                              </div>
                             </div>
                           ))}
                       </div>
@@ -695,16 +908,35 @@ export function AdminPanel() {
                                 <span className="text-sm">{group.name}</span>
                                 <span className="text-[10px] text-muted-foreground">({group._count.members} ילדים)</span>
                               </div>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => {
-                                  setEditingGroup(group.id);
-                                  setEditGroupName(group.name);
-                                }}
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </Button>
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                <select
+                                  value=""
+                                  onChange={(e) => {
+                                    if (e.target.value) {
+                                      handleAssignGroupToSchool(group.id, e.target.value);
+                                    }
+                                  }}
+                                  disabled={assigningGroup === group.id}
+                                  dir="rtl"
+                                  aria-label={`העברת כיתה ${group.name} לבית ספר`}
+                                  className="text-[10px] px-1.5 py-0.5 rounded border border-amber-300 bg-white cursor-pointer max-w-[120px]"
+                                >
+                                  <option value="">העבר לבית ספר...</option>
+                                  {schools.map((s) => (
+                                    <option key={s.id} value={s.id}>{s.name}</option>
+                                  ))}
+                                </select>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => {
+                                    setEditingGroup(group.id);
+                                    setEditGroupName(group.name);
+                                  }}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </Button>
+                              </div>
                             </div>
                           ))}
                       </div>
@@ -986,6 +1218,130 @@ export function AdminPanel() {
               {deletingSchool ? "מוחק..." : "מחיקה לצמיתות"}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Staff Dialog */}
+      <Dialog
+        open={!!addStaffDialog}
+        onOpenChange={(open) => {
+          if (!open) {
+            setAddStaffDialog(null);
+            setAddStaffError("");
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>הוספת איש צוות ל{addStaffDialog?.schoolName}</DialogTitle>
+            <DialogDescription>
+              הזינו את האימייל של המשתמש שברצונכם להוסיף כחבר צוות בבית הספר.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div>
+              <Label htmlFor="staff-email">אימייל</Label>
+              <Input
+                id="staff-email"
+                type="email"
+                dir="ltr"
+                placeholder="user@example.com"
+                value={addStaffEmail}
+                onChange={(e) => setAddStaffEmail(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleAddStaff()}
+              />
+            </div>
+            <div>
+              <Label htmlFor="staff-role">תפקיד</Label>
+              <select
+                id="staff-role"
+                value={addStaffRole}
+                onChange={(e) => setAddStaffRole(e.target.value)}
+                dir="rtl"
+                className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+              >
+                <option value="TEACHER">מורה</option>
+                <option value="ADMIN">מנהל</option>
+              </select>
+            </div>
+            {addStaffError && (
+              <p className="text-sm text-destructive">{addStaffError}</p>
+            )}
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" className="rounded-xl" onClick={() => setAddStaffDialog(null)}>
+              ביטול
+            </Button>
+            <Button
+              className="rounded-xl"
+              disabled={addStaffLoading || !addStaffEmail.trim()}
+              onClick={handleAddStaff}
+            >
+              {addStaffLoading ? <><Loader2 className="h-4 w-4 animate-spin ml-2" />מוסיף...</> : "הוספה"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Child to Group Dialog */}
+      <Dialog
+        open={!!addChildDialog}
+        onOpenChange={(open) => {
+          if (!open) {
+            setAddChildDialog(null);
+            setChildSearchQuery("");
+            setChildSearchResults([]);
+            setAddChildError("");
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>הוספת ילד ל{addChildDialog?.groupName}</DialogTitle>
+            <DialogDescription>
+              חפשו ילד לפי שם כדי להוסיף אותו לכיתה.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div>
+              <Label htmlFor="child-search">חיפוש ילד</Label>
+              <Input
+                id="child-search"
+                placeholder="הקלידו לפחות 2 תווים..."
+                value={childSearchQuery}
+                onChange={(e) => setChildSearchQuery(e.target.value)}
+                dir="auto"
+              />
+            </div>
+            {addChildError && (
+              <p className="text-sm text-destructive">{addChildError}</p>
+            )}
+            <div className="max-h-48 overflow-y-auto border rounded-md">
+              {childSearchLoading && (
+                <div className="flex items-center justify-center py-4">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                </div>
+              )}
+              {!childSearchLoading && childSearchResults.length === 0 && childSearchQuery.length >= 2 && (
+                <p className="text-xs text-muted-foreground text-center py-4">לא נמצאו ילדים</p>
+              )}
+              {childSearchResults.map((child) => (
+                <button
+                  key={child.id}
+                  type="button"
+                  className="w-full text-right px-3 py-2 hover:bg-accent border-b border-dashed last:border-0 disabled:opacity-50"
+                  disabled={addChildLoading}
+                  onClick={() => handleAddChildToGroup(child.id)}
+                >
+                  <p className="text-sm font-medium">{child.name}</p>
+                  <p className="text-[10px] text-muted-foreground">
+                    {child.parent.name} · {child.parent.email}
+                    {child.grade && ` · כיתה ${child.grade}`}
+                  </p>
+                </button>
+              ))}
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

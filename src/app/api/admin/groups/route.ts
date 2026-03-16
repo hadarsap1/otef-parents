@@ -50,14 +50,23 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { groupId, name } = await req.json();
-  if (!groupId || !name?.trim()) {
-    return NextResponse.json({ error: "groupId and name required" }, { status: 400 });
+  const { groupId, name, schoolId } = await req.json();
+  if (!groupId) {
+    return NextResponse.json({ error: "groupId required" }, { status: 400 });
+  }
+
+  const data: { name?: string; schoolId?: string | null } = {};
+  if (name?.trim()) data.name = name.trim();
+  if (schoolId !== undefined) data.schoolId = schoolId;
+
+  if (Object.keys(data).length === 0) {
+    return NextResponse.json({ error: "Nothing to update" }, { status: 400 });
   }
 
   const group = await prisma.group.update({
     where: { id: groupId },
-    data: { name: name.trim() },
+    data,
+    include: { school: { select: { id: true, name: true } } },
   });
 
   return NextResponse.json(group);
