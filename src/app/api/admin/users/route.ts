@@ -35,7 +35,7 @@ export async function PUT(req: Request) {
 
   const { userId, role } = await req.json();
 
-  if (!userId || !["PARENT", "TEACHER", "SUPERADMIN"].includes(role)) {
+  if (!userId || !["PARENT", "TEACHER", "ADMIN", "SUPERADMIN"].includes(role)) {
     return NextResponse.json({ error: "Invalid input" }, { status: 400 });
   }
 
