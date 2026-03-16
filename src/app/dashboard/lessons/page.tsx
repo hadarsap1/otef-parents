@@ -33,19 +33,40 @@ export default async function LessonsPage() {
     ...new Set(children.flatMap((c) => c.groupMemberships.map((m) => m.groupId))),
   ];
 
-  // Fetch teacher-created group lessons
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+
+  // Fetch teacher-created group lessons (upcoming only)
+  // Fetch one-time future lessons + all recurring lessons
   const lessons = await prisma.lesson.findMany({
-    where: { groupId: { in: groupIds } },
+    where: {
+      groupId: { in: groupIds },
+      OR: [
+        { recurrence: "ONCE", date: { gte: now } },
+        { recurrence: { not: "ONCE" } },
+      ],
+    },
     include: {
       teacher: { select: { name: true } },
       group: { select: { id: true, name: true } },
+      subGroups: {
+        include: {
+          members: { include: { child: { select: { id: true, name: true } } } },
+        },
+      },
     },
-    orderBy: [{ day: "asc" }, { startTime: "asc" }],
+    orderBy: [{ date: "asc" }, { startTime: "asc" }],
+  });
+
+  // Filter: for sub-grouped lessons, only include if a child is in a sub-group
+  const filtered = lessons.filter((lesson) => {
+    if (!lesson.hasSubGroups) return true;
+    return lesson.subGroups.some((sg) =>
+      sg.members.some((m) => childIds.includes(m.childId))
+    );
   });
 
   // Fetch parent-added personal lessons (ScheduleItems)
-  const now = new Date();
-  now.setHours(0, 0, 0, 0);
   const scheduleItems = await prisma.scheduleItem.findMany({
     where: {
       childId: { in: childIds },
@@ -58,7 +79,7 @@ export default async function LessonsPage() {
   return (
     <div className="space-y-4">
       <LessonsPageHeader />
-      <ParentLessons initialLessons={lessons} />
+      <ParentLessons initialLessons={filtered} childIds={childIds} />
       <PersonalLessons
         items={scheduleItems.map((s) => ({
           id: s.id,

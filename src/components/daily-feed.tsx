@@ -65,9 +65,23 @@ interface PersonalEventItem {
   emoji: string | null;
 }
 
+interface TeacherLessonItem {
+  type: "teacher-lesson";
+  id: string;
+  title: string;
+  groupName: string;
+  teacherName: string | null;
+  startTime: string; // "HH:mm"
+  endTime: string; // "HH:mm"
+  zoomLink: string | null;
+  notes: string | null;
+  subGroupName: string | null;
+}
+
 interface FeedData {
   children: { id: string; name: string; grade: string | null }[];
   lessons: Lesson[];
+  teacherLessons: TeacherLessonItem[];
   playdates: PlaydateItem[];
   personalEvents: PersonalEventItem[];
 }
@@ -318,6 +332,45 @@ function LessonRow({
   );
 }
 
+function TeacherLessonRow({ item }: { item: TeacherLessonItem }) {
+  return (
+    <div className="relative flex gap-3 py-3 rounded-lg -mx-1 px-1">
+      {/* Time column */}
+      <div className="flex flex-col items-center shrink-0 w-14 text-xs">
+        <span className="font-medium">{item.startTime}</span>
+        <span className="text-muted-foreground">{item.endTime}</span>
+      </div>
+
+      {/* Content */}
+      <div className="flex-1 min-w-0">
+        <p className="font-medium text-sm truncate">{item.title}</p>
+        <p className="text-xs text-muted-foreground truncate">
+          {item.groupName}
+          {item.subGroupName && <span className="ms-1 text-primary">· {item.subGroupName}</span>}
+          {item.teacherName && <span className="ms-1">· {item.teacherName}</span>}
+        </p>
+
+        {item.zoomLink && (
+          <Button
+            size="lg"
+            render={<a href={item.zoomLink} target="_blank" rel="noopener noreferrer" />}
+            className="mt-2 w-full text-base font-medium bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+          >
+            <Video className="h-5 w-5" />
+            לינק לשיעור
+          </Button>
+        )}
+
+        {item.notes && (
+          <p className="text-xs text-muted-foreground mt-0.5 truncate">
+            {item.notes}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function PlaydateRow({ item }: { item: PlaydateItem }) {
   const today = isToday(item.dateTime);
   const spotsLeft = item.maxCapacity - item.participantCount;
@@ -495,6 +548,8 @@ export function DailyFeed({ date }: { date?: string }) {
   }
 
   const hasLessons = data.lessons.length > 0;
+  const hasTeacherLessons = (data.teacherLessons?.length ?? 0) > 0;
+  const hasAnyLessons = hasLessons || hasTeacherLessons;
   const hasPlaydates = data.playdates.length > 0;
   const hasPersonalEvents = (data.personalEvents?.length ?? 0) > 0;
   const todayPlaydates = data.playdates.filter((pd) => isToday(pd.dateTime));
@@ -544,8 +599,21 @@ export function DailyFeed({ date }: { date?: string }) {
           </div>
         </CardHeader>
         <CardContent>
-          {hasLessons ? (
+          {hasAnyLessons ? (
             <div className="space-y-0">
+              {/* Teacher-created lessons (read-only) */}
+              {(data.teacherLessons ?? []).map((item, i) => (
+                <div
+                  key={`tl-${item.id}`}
+                  className={cn(
+                    (i < (data.teacherLessons?.length ?? 0) - 1 || hasLessons) &&
+                      "border-b border-dashed"
+                  )}
+                >
+                  <TeacherLessonRow item={item} />
+                </div>
+              ))}
+              {/* Parent-created lessons (editable) */}
               {data.lessons.map((item, i) => (
                 <LessonRow
                   key={item.id}
@@ -613,7 +681,7 @@ export function DailyFeed({ date }: { date?: string }) {
       )}
 
       {/* Empty state if nothing */}
-      {!hasPlaydates && !hasLessons && !hasPersonalEvents && (
+      {!hasPlaydates && !hasAnyLessons && !hasPersonalEvents && (
         <Card>
           <CardContent className="py-6 text-center text-muted-foreground">
             <p className="text-sm">אין אירועים מתוכננים.</p>

@@ -123,6 +123,7 @@ model Child {
   childParents          ChildParent[]
   invites               ChildInvite[]
   groupMemberships      GroupMember[]
+  lessonGroupMemberships LessonGroupMember[]
 }
 
 // ── Personal events (parent-created) ─────────────────────────
@@ -276,20 +277,47 @@ model GroupInvite {
   usedBy    User? @relation("GroupInviteRedeemer", fields: [usedByUserId], references: [id], onDelete: SetNull)
 }
 
-// ── Lesson scheduling (Teacher creates lessons per group) ────────
+// ── Lesson scheduling (Teacher creates date-based lessons) ────────
 
 model Lesson {
-  id        String @id @default(cuid())
-  title     String
-  day       Int    // 0=Sun, 1=Mon … 6=Sat
-  startTime String // "HH:mm"
-  endTime   String // "HH:mm"
+  id            String    @id @default(cuid())
+  title         String
+  date          DateTime  // first/only date for this lesson
+  startTime     String    // "HH:mm"
+  endTime       String    // "HH:mm"
+  recurrence    String    @default("ONCE") // "ONCE" | "DAILY" | "WEEKLY"
   zoomLink      String?
+  notes         String?
+  hasSubGroups  Boolean   @default(false)
   teacherId     String
   groupId       String
-  googleEventId String?  // Google Calendar event ID for sync
-  createdAt     DateTime @default(now())
+  googleEventId String?   // Google Calendar event ID for sync
+  createdAt     DateTime  @default(now())
 
-  teacher       User   @relation(fields: [teacherId], references: [id], onDelete: Cascade)
-  group         Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  teacher       User          @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  group         Group         @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  subGroups     LessonGroup[]
+}
+
+model LessonGroup {
+  id          String  @id @default(cuid())
+  lessonId    String
+  name        String
+  startTime   String  // "HH:mm"
+  endTime     String  // "HH:mm"
+  maxCapacity Int?
+
+  lesson  Lesson              @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  members LessonGroupMember[]
+}
+
+model LessonGroupMember {
+  id             String @id @default(cuid())
+  lessonGroupId  String
+  childId        String
+
+  lessonGroup LessonGroup @relation(fields: [lessonGroupId], references: [id], onDelete: Cascade)
+  child       Child       @relation(fields: [childId], references: [id], onDelete: Cascade)
+
+  @@unique([lessonGroupId, childId])
 }

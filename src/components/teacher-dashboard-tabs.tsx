@@ -12,15 +12,28 @@ interface Group {
   _count: { members: number };
 }
 
+interface SubGroup {
+  id: string;
+  name: string;
+  startTime: string;
+  endTime: string;
+  maxCapacity: number | null;
+  members: { child: { id: string; name: string } }[];
+}
+
 interface Lesson {
   id: string;
   title: string;
-  day: number;
+  date: string | Date;
   startTime: string;
   endTime: string;
   zoomLink: string | null;
+  notes: string | null;
+  recurrence: string;
+  hasSubGroups: boolean;
   groupId: string;
   group: { id: string; name: string; members?: { child: { id: string; name: string } }[] };
+  subGroups?: SubGroup[];
 }
 
 export function TeacherDashboardTabs({

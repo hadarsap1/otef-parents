@@ -31,6 +31,15 @@ interface DailyDigestData {
     endTime: string | null;
     notes: string | null;
   }[];
+  teacherLessons?: {
+    title: string;
+    groupName: string;
+    teacherName: string | null;
+    startTime: string;
+    endTime: string;
+    zoomLink: string | null;
+    subGroupName: string | null;
+  }[];
   lessons: {
     childName: string;
     subject: string;
@@ -58,11 +67,39 @@ function buildDigestHtml(data: DailyDigestData): string {
   const dateDisplay = formatHebrewDate(data.date);
   const hasContent =
     data.personalEvents.length > 0 ||
+    (data.teacherLessons?.length ?? 0) > 0 ||
     data.lessons.length > 0 ||
     data.playdates.length > 0;
 
   if (!hasContent) {
     return "";
+  }
+
+  let teacherLessonsHtml = "";
+  if ((data.teacherLessons?.length ?? 0) > 0) {
+    const rows = data.teacherLessons!
+      .map(
+        (l) =>
+          `<tr>
+            <td style="padding:8px 12px;border-bottom:1px solid #eee;font-size:14px;">${escapeHtml(l.startTime)}-${escapeHtml(l.endTime)}</td>
+            <td style="padding:8px 12px;border-bottom:1px solid #eee;font-size:14px;">${escapeHtml(l.title)}</td>
+            <td style="padding:8px 12px;border-bottom:1px solid #eee;font-size:14px;">${escapeHtml(l.groupName)}${l.subGroupName ? ` (${escapeHtml(l.subGroupName)})` : ""}</td>
+            <td style="padding:8px 12px;border-bottom:1px solid #eee;font-size:14px;">${l.zoomLink ? `<a href="${sanitizeUrl(l.zoomLink)}" style="color:#2563eb;">קישור</a>` : "-"}</td>
+          </tr>`
+      )
+      .join("");
+
+    teacherLessonsHtml = `
+      <h2 style="font-size:16px;color:#1e293b;margin:24px 0 8px;">🏫 שיעורים (מהמורה)</h2>
+      <table style="width:100%;border-collapse:collapse;direction:rtl;">
+        <tr style="background:#f1f5f9;">
+          <th style="padding:8px 12px;text-align:right;font-size:13px;color:#64748b;">שעה</th>
+          <th style="padding:8px 12px;text-align:right;font-size:13px;color:#64748b;">שיעור</th>
+          <th style="padding:8px 12px;text-align:right;font-size:13px;color:#64748b;">קבוצה</th>
+          <th style="padding:8px 12px;text-align:right;font-size:13px;color:#64748b;">זום</th>
+        </tr>
+        ${rows}
+      </table>`;
   }
 
   let lessonsHtml = "";
@@ -134,6 +171,7 @@ function buildDigestHtml(data: DailyDigestData): string {
       <p style="color:rgba(255,255,255,0.85);font-size:14px;margin:8px 0 0;">${dateDisplay}</p>
     </div>
     <div style="padding:16px 32px 32px;">
+      ${teacherLessonsHtml}
       ${lessonsHtml}
       ${eventsHtml}
       ${playdatesHtml}

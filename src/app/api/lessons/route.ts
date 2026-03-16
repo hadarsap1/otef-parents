@@ -4,7 +4,7 @@ import { authOptions, requireRole, teacherFilter } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 // GET /api/lessons - list lessons
-// Parents: lessons for groups their children belong to
+// Parents: upcoming lessons for groups their children belong to (filtered by sub-group membership)
 // Teachers: own lessons
 export async function GET() {
   const session = await getServerSession(authOptions);
@@ -27,8 +27,13 @@ export async function GET() {
             members: { select: { child: { select: { id: true, name: true } } } },
           },
         },
+        subGroups: {
+          include: {
+            members: { include: { child: { select: { id: true, name: true } } } },
+          },
+        },
       },
-      orderBy: [{ day: "asc" }, { startTime: "asc" }],
+      orderBy: [{ date: "asc" }, { startTime: "asc" }],
     });
     return NextResponse.json(lessons);
   }
@@ -44,20 +49,44 @@ export async function GET() {
     select: { id: true, groupMemberships: { select: { groupId: true } } },
   });
 
+  const childIds = children.map((c) => c.id);
   const groupIds = [
     ...new Set(children.flatMap((c) => c.groupMemberships.map((m) => m.groupId))),
   ];
 
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+
+  // Fetch one-time future lessons + all recurring lessons
   const lessons = await prisma.lesson.findMany({
-    where: { groupId: { in: groupIds } },
+    where: {
+      groupId: { in: groupIds },
+      OR: [
+        { recurrence: "ONCE", date: { gte: now } },
+        { recurrence: { not: "ONCE" } },
+      ],
+    },
     include: {
       teacher: { select: { name: true } },
       group: { select: { id: true, name: true } },
+      subGroups: {
+        include: {
+          members: { include: { child: { select: { id: true, name: true } } } },
+        },
+      },
     },
-    orderBy: [{ day: "asc" }, { startTime: "asc" }],
+    orderBy: [{ date: "asc" }, { startTime: "asc" }],
   });
 
-  return NextResponse.json(lessons);
+  // Filter: for sub-grouped lessons, only include if at least one child is in a sub-group
+  const filtered = lessons.filter((lesson) => {
+    if (!lesson.hasSubGroups) return true;
+    return lesson.subGroups.some((sg) =>
+      sg.members.some((m) => childIds.includes(m.childId))
+    );
+  });
+
+  return NextResponse.json(filtered);
 }
 
 // POST /api/lessons - teacher creates a lesson (groupId required)
@@ -65,19 +94,17 @@ export async function POST(req: NextRequest) {
   const { error, session } = await requireRole("TEACHER", "SUPERADMIN");
   if (error) return error;
 
-  const { title, day, startTime, endTime, groupId, zoomLink } =
+  const { title, date, startTime, endTime, groupId, zoomLink, notes, recurrence, subGroups } =
     await req.json();
 
-  if (!title?.trim() || day == null || !startTime || !endTime || !groupId) {
+  if (!title?.trim() || !date || !startTime || !endTime || !groupId) {
     return NextResponse.json(
-      { error: "title, day, startTime, endTime, groupId are required" },
+      { error: "title, date, startTime, endTime, groupId are required" },
       { status: 400 }
     );
   }
 
-  if (day < 0 || day > 6) {
-    return NextResponse.json({ error: "day must be 0-6" }, { status: 400 });
-  }
+  const validRecurrence = ["ONCE", "DAILY", "WEEKLY"].includes(recurrence) ? recurrence : "ONCE";
 
   // Verify teacher owns the group (SUPERADMIN sees all)
   const group = await prisma.group.findFirst({
@@ -87,15 +114,42 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Group not found" }, { status: 404 });
   }
 
+  const hasSubGroups = Array.isArray(subGroups) && subGroups.length > 0;
+
   const lesson = await prisma.lesson.create({
     data: {
       title: title.trim(),
-      day,
+      date: new Date(date),
       startTime,
       endTime,
+      recurrence: validRecurrence,
       teacherId: session.user.id,
       groupId,
       zoomLink: zoomLink?.trim() || null,
+      notes: notes?.trim() || null,
+      hasSubGroups,
+      ...(hasSubGroups && {
+        subGroups: {
+          create: subGroups.map((sg: { name: string; startTime: string; endTime: string; maxCapacity?: number; childIds?: string[] }) => ({
+            name: sg.name,
+            startTime: sg.startTime,
+            endTime: sg.endTime,
+            maxCapacity: sg.maxCapacity ?? null,
+            ...(sg.childIds?.length && {
+              members: {
+                create: sg.childIds.map((childId: string) => ({ childId })),
+              },
+            }),
+          })),
+        },
+      }),
+    },
+    include: {
+      subGroups: {
+        include: {
+          members: { include: { child: { select: { id: true, name: true } } } },
+        },
+      },
     },
   });
 

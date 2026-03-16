@@ -34,8 +34,13 @@ export default async function TeacherDashboardPage() {
             members: { select: { child: { select: { id: true, name: true } } } },
           },
         },
+        subGroups: {
+          include: {
+            members: { include: { child: { select: { id: true, name: true } } } },
+          },
+        },
       },
-      orderBy: [{ day: "asc" }, { startTime: "asc" }],
+      orderBy: [{ date: "asc" }, { startTime: "asc" }],
     }),
   ]);
 

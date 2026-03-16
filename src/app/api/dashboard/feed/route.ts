@@ -32,6 +32,80 @@ export async function GET(req: NextRequest) {
 
   const childIds = children.map((c) => c.id);
 
+  // Get group IDs for the user's children
+  const groupMemberships = await prisma.groupMember.findMany({
+    where: { childId: { in: childIds } },
+    select: { groupId: true },
+  });
+  const groupIds = [...new Set(groupMemberships.map((m) => m.groupId))];
+
+  // Fetch teacher-created lessons for today (one-time on this date + recurring)
+  const todayDow = dayStart.getDay(); // 0=Sun..6=Sat
+  const teacherLessons = groupIds.length > 0
+    ? await prisma.lesson.findMany({
+        where: {
+          groupId: { in: groupIds },
+          OR: [
+            { recurrence: "ONCE", date: { gte: dayStart, lte: dayEnd } },
+            { recurrence: "DAILY" },
+            { recurrence: "WEEKLY" },
+          ],
+        },
+        include: {
+          teacher: { select: { name: true } },
+          group: { select: { id: true, name: true } },
+          subGroups: {
+            include: {
+              members: { include: { child: { select: { id: true, name: true } } } },
+            },
+          },
+        },
+        orderBy: { startTime: "asc" },
+      })
+    : [];
+
+  // Filter: WEEKLY must match day-of-week, sub-grouped must include child
+  const filteredTeacherLessons = teacherLessons
+    .filter((lesson) => {
+      // WEEKLY: only show on matching day of week
+      if (lesson.recurrence === "WEEKLY" && lesson.date.getDay() !== todayDow) return false;
+      // Sub-group filter
+      if (!lesson.hasSubGroups) return true;
+      return lesson.subGroups.some((sg) =>
+        sg.members.some((m) => childIds.includes(m.childId))
+      );
+    })
+    .map((lesson) => {
+      let displayStartTime = lesson.startTime;
+      let displayEndTime = lesson.endTime;
+      let subGroupName: string | null = null;
+
+      if (lesson.hasSubGroups) {
+        const childSg = lesson.subGroups.find((sg) =>
+          sg.members.some((m) => childIds.includes(m.childId))
+        );
+        if (childSg) {
+          displayStartTime = childSg.startTime;
+          displayEndTime = childSg.endTime;
+          subGroupName = childSg.name;
+        }
+      }
+
+      return {
+        type: "teacher-lesson" as const,
+        id: lesson.id,
+        title: lesson.title,
+        groupName: lesson.group.name,
+        teacherName: lesson.teacher.name,
+        startTime: displayStartTime,
+        endTime: displayEndTime,
+        zoomLink: lesson.zoomLink,
+        notes: lesson.notes,
+        recurrence: lesson.recurrence,
+        subGroupName,
+      };
+    });
+
   // Fetch personal events for today
   const personalEvents = await prisma.personalEvent.findMany({
     where: {
@@ -109,6 +183,7 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({
     children,
+    teacherLessons: filteredTeacherLessons,
     personalEvents: personalEvents.map((e) => ({
       type: "personal" as const,
       id: e.id,
