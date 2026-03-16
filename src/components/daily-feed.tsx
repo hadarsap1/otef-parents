@@ -125,6 +125,7 @@ function LessonRow({
   const live = isHappeningNow(item.startTime, item.endTime);
 
   async function handleDelete() {
+    if (!confirm("האם למחוק את השיעור?")) return;
     setDeleting(true);
     await fetch(`/api/schedule/${item.id}`, { method: "DELETE" });
     onDelete?.(item.id);
@@ -271,6 +272,7 @@ function LessonRow({
               "font-medium text-sm truncate",
               live && "text-primary"
             )}
+            title={item.subject}
           >
             {item.subject}
           </p>
@@ -343,7 +345,10 @@ function TeacherLessonRow({ item }: { item: TeacherLessonItem }) {
 
       {/* Content */}
       <div className="flex-1 min-w-0">
-        <p className="font-medium text-sm truncate">{item.title}</p>
+        <div className="flex items-center gap-1.5">
+          <p className="font-medium text-sm truncate" title={item.title}>{item.title}</p>
+          <span className="text-[10px] text-muted-foreground bg-muted rounded px-1.5 py-0.5 shrink-0">מהמורה</span>
+        </div>
         <p className="text-xs text-muted-foreground truncate">
           {item.groupName}
           {item.subGroupName && <span className="ms-1 text-primary">· {item.subGroupName}</span>}
@@ -362,7 +367,7 @@ function TeacherLessonRow({ item }: { item: TeacherLessonItem }) {
         )}
 
         {item.notes && (
-          <p className="text-xs text-muted-foreground mt-0.5 truncate">
+          <p className="text-xs text-muted-foreground mt-0.5 truncate" title={item.notes}>
             {item.notes}
           </p>
         )}

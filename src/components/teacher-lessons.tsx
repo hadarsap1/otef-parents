@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Clock, Trash2, Video, Pencil, Users, Copy, SplitSquareHorizontal, Repeat, CalendarDays } from "lucide-react";
+import { Plus, Clock, Trash2, Video, Pencil, Users, Copy, SplitSquareHorizontal, Repeat, CalendarDays, AlertTriangle, Loader2 as Loader } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -71,6 +71,12 @@ function isPast(dateVal: string | Date) {
   return d < new Date();
 }
 
+const RECURRENCE_OPTIONS = [
+  { value: "ONCE", label: "חד פעמי", icon: CalendarDays },
+  { value: "WEEKLY", label: "שבועי", icon: Repeat },
+  { value: "DAILY", label: "יומי", icon: Repeat },
+] as const;
+
 export function TeacherLessons({
   initialLessons,
   groups,
@@ -82,6 +88,9 @@ export function TeacherLessons({
   const [createOpen, setCreateOpen] = useState(false);
   const [editSlot, setEditSlot] = useState<Lesson | null>(null);
   const [loading, setLoading] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [editError, setEditError] = useState<string | null>(null);
 
   // Create form state
   const [title, setTitle] = useState("");
@@ -130,6 +139,7 @@ export function TeacherLessons({
     setRecurrence("ONCE");
     setHasSubGroups(false);
     setSubGroups([]);
+    setCreateError(null);
   }
 
   function addSubGroup() {
@@ -172,6 +182,7 @@ export function TeacherLessons({
   async function handleCreate() {
     if (!title.trim() || !groupId || !date) return;
     setLoading(true);
+    setCreateError(null);
     try {
       const body: Record<string, unknown> = {
         title: title.trim(),
@@ -201,15 +212,26 @@ export function TeacherLessons({
         resetCreateForm();
         setCreateOpen(false);
         router.refresh();
+      } else {
+        const data = await res.json().catch(() => null);
+        setCreateError(data?.error || "שגיאה ביצירת השיעור. נסו שוב.");
       }
+    } catch {
+      setCreateError("שגיאת רשת. בדקו את החיבור ונסו שוב.");
     } finally {
       setLoading(false);
     }
   }
 
   async function handleDeleteLesson(lessonId: string) {
-    const res = await fetch(`/api/lessons/${lessonId}`, { method: "DELETE" });
-    if (res.ok) router.refresh();
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/lessons/${lessonId}`, { method: "DELETE" });
+      if (res.ok) router.refresh();
+    } finally {
+      setLoading(false);
+      setDeleteConfirmId(null);
+    }
   }
 
   function openEdit(lesson: Lesson) {
@@ -221,11 +243,13 @@ export function TeacherLessons({
     setEditZoomLink(lesson.zoomLink ?? "");
     setEditNotes(lesson.notes ?? "");
     setEditRecurrence(lesson.recurrence ?? "ONCE");
+    setEditError(null);
   }
 
   async function handleEdit() {
     if (!editSlot) return;
     setLoading(true);
+    setEditError(null);
     try {
       const res = await fetch(`/api/lessons/${editSlot.id}`, {
         method: "PUT",
@@ -243,7 +267,12 @@ export function TeacherLessons({
       if (res.ok) {
         setEditSlot(null);
         router.refresh();
+      } else {
+        const data = await res.json().catch(() => null);
+        setEditError(data?.error || "שגיאה בעדכון השיעור. נסו שוב.");
       }
+    } catch {
+      setEditError("שגיאת רשת. בדקו את החיבור ונסו שוב.");
     } finally {
       setLoading(false);
     }
@@ -271,7 +300,7 @@ export function TeacherLessons({
                 יצירת שיעור לתאריך מסוים. כל הילדים בקבוצה יראו אותו.
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-3 max-h-[60vh] overflow-y-auto">
+            <div className="space-y-3 max-h-[calc(100dvh-200px)] overflow-y-auto">
               <div className="space-y-1.5">
                 <Label htmlFor="lesson-title">שם השיעור</Label>
                 <Input
@@ -314,19 +343,18 @@ export function TeacherLessons({
 
               {/* Recurrence selector */}
               <div className="space-y-1.5">
-                <Label>תדירות</Label>
-                <div className="flex gap-2">
-                  {([
-                    { value: "ONCE", label: "חד פעמי", icon: CalendarDays },
-                    { value: "WEEKLY", label: "שבועי", icon: Repeat },
-                    { value: "DAILY", label: "יומי", icon: Repeat },
-                  ] as const).map(({ value, label, icon: Icon }) => (
+                <Label id="recurrence-label">תדירות</Label>
+                <div className="flex gap-2" role="radiogroup" aria-labelledby="recurrence-label">
+                  {RECURRENCE_OPTIONS.map(({ value, label, icon: Icon }) => (
                     <button
                       key={value}
                       type="button"
+                      role="radio"
+                      aria-checked={recurrence === value}
+                      aria-label={`תדירות: ${label}`}
                       onClick={() => setRecurrence(value)}
                       className={cn(
-                        "flex-1 flex items-center justify-center gap-1.5 rounded-xl border px-3 py-2 text-sm transition-colors",
+                        "flex-1 flex items-center justify-center gap-1.5 rounded-xl border px-3 py-2.5 text-sm transition-colors min-h-[44px]",
                         recurrence === value
                           ? "bg-primary text-primary-foreground border-primary"
                           : "border-border hover:border-primary/50"
@@ -387,6 +415,7 @@ export function TeacherLessons({
                   type="button"
                   role="switch"
                   aria-checked={hasSubGroups}
+                  aria-label="חלוקה לקבוצות משנה"
                   onClick={() => {
                     setHasSubGroups(!hasSubGroups);
                     if (!hasSubGroups && subGroups.length === 0) addSubGroup();
@@ -399,7 +428,7 @@ export function TeacherLessons({
                   <span
                     className={cn(
                       "pointer-events-none inline-block h-5 w-5 rounded-full bg-background shadow-lg ring-0 transition-transform",
-                      hasSubGroups ? "translate-x-0" : "translate-x-5"
+                      hasSubGroups ? "-translate-x-5" : "translate-x-0"
                     )}
                   />
                 </button>
@@ -417,21 +446,23 @@ export function TeacherLessons({
                 <div className="space-y-3 border border-border/60 rounded-xl p-3">
                   {subGroups.map((sg, idx) => (
                     <div key={idx} className="rounded-xl border border-border/40 p-3 space-y-2">
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between gap-2">
                         <Input
                           value={sg.name}
                           onChange={(e) => updateSubGroup(idx, "name", e.target.value)}
                           placeholder="שם קבוצה"
+                          aria-label={`שם קבוצת משנה ${idx + 1}`}
                           className="rounded-xl h-9 text-sm flex-1"
                         />
                         {subGroups.length > 1 && (
                           <Button
                             variant="ghost"
                             size="icon-sm"
-                            className="rounded-lg hover:bg-destructive/10 h-7 w-7 ms-2"
+                            className="rounded-lg hover:bg-destructive/10 h-9 w-9"
                             onClick={() => removeSubGroup(idx)}
+                            aria-label={`הסרת קבוצה ${sg.name}`}
                           >
-                            <Trash2 className="h-3 w-3 text-destructive" />
+                            <Trash2 className="h-3.5 w-3.5 text-destructive" />
                           </Button>
                         )}
                       </div>
@@ -474,9 +505,11 @@ export function TeacherLessons({
                                 key={child.id}
                                 type="button"
                                 disabled={isInOtherGroup}
+                                aria-pressed={isInThisGroup}
+                                aria-label={`${child.name}${isInOtherGroup ? " (משובץ בקבוצה אחרת)" : ""}`}
                                 onClick={() => toggleChildInSubGroup(idx, child.id)}
                                 className={cn(
-                                  "text-xs px-2 py-1 rounded-lg border transition-colors",
+                                  "text-sm px-3 py-1.5 rounded-lg border transition-colors min-h-[36px]",
                                   isInThisGroup
                                     ? "bg-primary text-primary-foreground border-primary"
                                     : isInOtherGroup
@@ -494,9 +527,12 @@ export function TeacherLessons({
                   ))}
 
                   {unassignedChildren.length > 0 && (
-                    <p className="text-xs text-amber-600">
-                      {unassignedChildren.length} ילדים לא משובצים: {unassignedChildren.map((c) => c.name).join(", ")}
-                    </p>
+                    <div className="flex items-start gap-1.5 text-xs text-amber-600" role="alert">
+                      <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                      <span>
+                        {unassignedChildren.length} ילדים לא משובצים: {unassignedChildren.map((c) => c.name).join(", ")}
+                      </span>
+                    </div>
                   )}
 
                   <Button
@@ -512,12 +548,21 @@ export function TeacherLessons({
                 </div>
               )}
             </div>
+
+            {createError && (
+              <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 rounded-xl px-3 py-2" role="alert">
+                <AlertTriangle className="h-4 w-4 shrink-0" />
+                {createError}
+              </div>
+            )}
+
             <DialogFooter>
               <Button
                 onClick={handleCreate}
                 disabled={loading || !title.trim() || !groupId}
                 className="rounded-xl h-11 font-medium"
               >
+                {loading && <Loader className="h-4 w-4 animate-spin" />}
                 {loading ? "יוצר..." : "יצירת שיעור"}
               </Button>
             </DialogFooter>
@@ -538,7 +583,7 @@ export function TeacherLessons({
               key={lesson.id}
               className={cn(
                 "shadow-sm border-border/60 overflow-hidden",
-                isPast(lesson.date) && "opacity-50"
+                isPast(lesson.date) && lesson.recurrence === "ONCE" && "opacity-50"
               )}
             >
               <div className="flex items-center gap-3 px-4 py-3">
@@ -555,7 +600,7 @@ export function TeacherLessons({
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm truncate">{lesson.title}</p>
+                  <p className="font-medium text-sm truncate" title={lesson.title}>{lesson.title}</p>
                   <p className="text-xs text-muted-foreground truncate">
                     {lesson.group.name}
                     {lesson.recurrence !== "ONCE" && (
@@ -588,18 +633,18 @@ export function TeacherLessons({
                   <Button
                     variant="ghost"
                     size="icon-sm"
-                    className="rounded-lg hover:bg-primary/10"
+                    className="rounded-lg hover:bg-primary/10 h-9 w-9"
                     onClick={() => openEdit(lesson)}
-                    aria-label="עריכת שיעור"
+                    aria-label={`עריכת שיעור ${lesson.title}`}
                   >
                     <Pencil className="h-3.5 w-3.5 text-primary" />
                   </Button>
                   <Button
                     variant="ghost"
                     size="icon-sm"
-                    className="rounded-lg hover:bg-destructive/10"
-                    onClick={() => handleDeleteLesson(lesson.id)}
-                    aria-label="מחיקת שיעור"
+                    className="rounded-lg hover:bg-destructive/10 h-9 w-9"
+                    onClick={() => setDeleteConfirmId(lesson.id)}
+                    aria-label={`מחיקת שיעור ${lesson.title}`}
                   >
                     <Trash2 className="h-3.5 w-3.5 text-destructive" />
                   </Button>
@@ -609,6 +654,39 @@ export function TeacherLessons({
           ))}
         </div>
       )}
+
+      {/* Delete confirmation dialog */}
+      <Dialog
+        open={!!deleteConfirmId}
+        onOpenChange={(open) => !open && setDeleteConfirmId(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>מחיקת שיעור</DialogTitle>
+            <DialogDescription>
+              האם למחוק את השיעור? לא ניתן לבטל פעולה זו.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              className="rounded-xl"
+              onClick={() => setDeleteConfirmId(null)}
+            >
+              ביטול
+            </Button>
+            <Button
+              variant="destructive"
+              className="rounded-xl"
+              onClick={() => deleteConfirmId && handleDeleteLesson(deleteConfirmId)}
+              disabled={loading}
+            >
+              {loading && <Loader className="h-4 w-4 animate-spin" />}
+              {loading ? "מוחק..." : "מחיקה"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Edit lesson dialog */}
       <Dialog
@@ -642,19 +720,18 @@ export function TeacherLessons({
               />
             </div>
             <div className="space-y-1.5">
-              <Label>תדירות</Label>
-              <div className="flex gap-2">
-                {([
-                  { value: "ONCE", label: "חד פעמי", icon: CalendarDays },
-                  { value: "WEEKLY", label: "שבועי", icon: Repeat },
-                  { value: "DAILY", label: "יומי", icon: Repeat },
-                ] as const).map(({ value, label, icon: Icon }) => (
+              <Label id="edit-recurrence-label">תדירות</Label>
+              <div className="flex gap-2" role="radiogroup" aria-labelledby="edit-recurrence-label">
+                {RECURRENCE_OPTIONS.map(({ value, label, icon: Icon }) => (
                   <button
                     key={value}
                     type="button"
+                    role="radio"
+                    aria-checked={editRecurrence === value}
+                    aria-label={`תדירות: ${label}`}
                     onClick={() => setEditRecurrence(value)}
                     className={cn(
-                      "flex-1 flex items-center justify-center gap-1.5 rounded-xl border px-3 py-2 text-sm transition-colors",
+                      "flex-1 flex items-center justify-center gap-1.5 rounded-xl border px-3 py-2.5 text-sm transition-colors min-h-[44px]",
                       editRecurrence === value
                         ? "bg-primary text-primary-foreground border-primary"
                         : "border-border hover:border-primary/50"
@@ -711,6 +788,14 @@ export function TeacherLessons({
               />
             </div>
           </div>
+
+          {editError && (
+            <div className="flex items-center gap-2 text-sm text-destructive bg-destructive/10 rounded-xl px-3 py-2" role="alert">
+              <AlertTriangle className="h-4 w-4 shrink-0" />
+              {editError}
+            </div>
+          )}
+
           <DialogFooter>
             <Button
               variant="outline"
@@ -724,6 +809,7 @@ export function TeacherLessons({
               disabled={loading}
               className="rounded-xl h-11 font-medium"
             >
+              {loading && <Loader className="h-4 w-4 animate-spin" />}
               {loading ? "שומר..." : "שמירה"}
             </Button>
           </DialogFooter>

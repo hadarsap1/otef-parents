@@ -126,7 +126,7 @@ export function ParentLessons({
                     </div>
 
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">{lesson.title}</p>
+                      <p className="font-medium text-sm truncate" title={lesson.title}>{lesson.title}</p>
                       <p className="text-xs text-muted-foreground truncate">
                         {lesson.group.name}
                         {lesson.recurrence !== "ONCE" && (

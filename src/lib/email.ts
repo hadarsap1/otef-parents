@@ -91,7 +91,7 @@ function buildDigestHtml(data: DailyDigestData): string {
 
     teacherLessonsHtml = `
       <h2 style="font-size:16px;color:#1e293b;margin:24px 0 8px;">🏫 שיעורים (מהמורה)</h2>
-      <table style="width:100%;border-collapse:collapse;direction:rtl;">
+      <table dir="rtl" style="width:100%;border-collapse:collapse;direction:rtl;text-align:right;">
         <tr style="background:#f1f5f9;">
           <th style="padding:8px 12px;text-align:right;font-size:13px;color:#64748b;">שעה</th>
           <th style="padding:8px 12px;text-align:right;font-size:13px;color:#64748b;">שיעור</th>
@@ -118,7 +118,7 @@ function buildDigestHtml(data: DailyDigestData): string {
 
     lessonsHtml = `
       <h2 style="font-size:16px;color:#1e293b;margin:24px 0 8px;">📚 שיעורים</h2>
-      <table style="width:100%;border-collapse:collapse;direction:rtl;">
+      <table dir="rtl" style="width:100%;border-collapse:collapse;direction:rtl;text-align:right;">
         <tr style="background:#f1f5f9;">
           <th style="padding:8px 12px;text-align:right;font-size:13px;color:#64748b;">שעה</th>
           <th style="padding:8px 12px;text-align:right;font-size:13px;color:#64748b;">מקצוע</th>
