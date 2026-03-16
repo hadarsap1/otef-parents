@@ -505,8 +505,9 @@ export function AdminPanel() {
                     value={user.role}
                     onChange={(e) => changeRole(user.id, e.target.value)}
                     disabled={updatingId === user.id}
+                    dir="rtl"
                     aria-label={`תפקיד של ${user.name}`}
-                    className={`text-xs font-medium px-2 py-1 rounded-full border-0 cursor-pointer focus:ring-2 focus:ring-ring focus:ring-offset-1 ${
+                    className={`text-xs font-medium px-3 py-1.5 min-h-[36px] rounded-full border border-border cursor-pointer focus:ring-2 focus:ring-ring focus:ring-offset-1 appearance-auto ${
                       ROLE_COLORS[user.role] ?? ""
                     }`}
                   >
