@@ -59,6 +59,7 @@ interface Lesson {
   notes: string | null;
   recurrence: string;
   hasSubGroups: boolean;
+  subGroupMode?: string;
   groupId: string | null;
   group: { id: string; name: string; school?: { name: string } | null; members?: { child: { id: string; name: string } }[] } | null;
   subGroups?: SubGroup[];
@@ -114,6 +115,7 @@ export function TeacherLessons({
   const [notes, setNotes] = useState("");
   const [recurrence, setRecurrence] = useState("ONCE");
   const [hasSubGroups, setHasSubGroups] = useState(false);
+  const [subGroupMode, setSubGroupMode] = useState<"MANUAL" | "TIMESLOTS">("TIMESLOTS");
   const [subGroups, setSubGroups] = useState<{
     name: string;
     startTime: string;
@@ -121,6 +123,11 @@ export function TeacherLessons({
     maxCapacity: string;
     childIds: string[];
   }[]>([]);
+  // Timeslot generator state
+  const [slotRangeStart, setSlotRangeStart] = useState("13:00");
+  const [slotRangeEnd, setSlotRangeEnd] = useState("16:00");
+  const [slotInterval, setSlotInterval] = useState("30");
+  const [slotCapacity, setSlotCapacity] = useState("1");
 
   // Edit form state
   const [editTitle, setEditTitle] = useState("");
@@ -148,7 +155,12 @@ export function TeacherLessons({
     setNotes("");
     setRecurrence("ONCE");
     setHasSubGroups(false);
+    setSubGroupMode("TIMESLOTS");
     setSubGroups([]);
+    setSlotRangeStart("13:00");
+    setSlotRangeEnd("16:00");
+    setSlotInterval("30");
+    setSlotCapacity("1");
     setCreateError(null);
   }
 
@@ -181,6 +193,31 @@ export function TeacherLessons({
     );
   }
 
+  function generateTimeslots() {
+    const intervalMin = Number(slotInterval) || 30;
+    const cap = slotCapacity;
+    const slots: typeof subGroups = [];
+    const [startH, startM] = slotRangeStart.split(":").map(Number);
+    const [endH, endM] = slotRangeEnd.split(":").map(Number);
+    let current = startH * 60 + startM;
+    const end = endH * 60 + endM;
+    let idx = 1;
+    while (current + intervalMin <= end) {
+      const slotStart = `${String(Math.floor(current / 60)).padStart(2, "0")}:${String(current % 60).padStart(2, "0")}`;
+      const slotEnd = `${String(Math.floor((current + intervalMin) / 60)).padStart(2, "0")}:${String((current + intervalMin) % 60).padStart(2, "0")}`;
+      slots.push({
+        name: `משבצת ${idx}`,
+        startTime: slotStart,
+        endTime: slotEnd,
+        maxCapacity: cap,
+        childIds: [],
+      });
+      current += intervalMin;
+      idx++;
+    }
+    setSubGroups(slots);
+  }
+
   // Filter groups by selected school
   const selectedSchool = schools.find((s) => s.id === schoolId);
   const filteredGroups = schoolId
@@ -211,6 +248,7 @@ export function TeacherLessons({
         notes: notes.trim() || null,
       };
       if (hasSubGroups && subGroups.length > 0) {
+        body.subGroupMode = subGroupMode;
         body.subGroups = subGroups.map((sg) => ({
           name: sg.name,
           startTime: sg.startTime,
@@ -451,16 +489,15 @@ export function TeacherLessons({
                 />
               </div>
 
-              {/* Sub-groups toggle — only when a class is selected */}
-              {groupId && <><div className="flex items-center gap-2 pt-2">
+              {/* Sub-groups toggle */}
+              <div className="flex items-center gap-2 pt-2">
                 <button
                   type="button"
                   role="switch"
                   aria-checked={hasSubGroups}
-                  aria-label="חלוקה לקבוצות משנה"
+                  aria-label="חלוקה לקבוצות"
                   onClick={() => {
                     setHasSubGroups(!hasSubGroups);
-                    if (!hasSubGroups && subGroups.length === 0) addSubGroup();
                   }}
                   className={cn(
                     "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors",
@@ -474,10 +511,7 @@ export function TeacherLessons({
                     )}
                   />
                 </button>
-                <Label className="cursor-pointer" onClick={() => {
-                  setHasSubGroups(!hasSubGroups);
-                  if (!hasSubGroups && subGroups.length === 0) addSubGroup();
-                }}>
+                <Label className="cursor-pointer" onClick={() => setHasSubGroups(!hasSubGroups)}>
                   <SplitSquareHorizontal className="h-3.5 w-3.5 inline-block me-1" />
                   חלוקה לקבוצות
                 </Label>
@@ -486,110 +520,189 @@ export function TeacherLessons({
               {/* Sub-group builder */}
               {hasSubGroups && (
                 <div className="space-y-3 border border-border/60 rounded-xl p-3">
-                  {subGroups.map((sg, idx) => (
-                    <div key={idx} className="rounded-xl border border-border/40 p-3 space-y-2">
-                      <div className="flex items-center justify-between gap-2">
-                        <Input
-                          value={sg.name}
-                          onChange={(e) => updateSubGroup(idx, "name", e.target.value)}
-                          placeholder="שם קבוצה"
-                          aria-label={`שם קבוצת משנה ${idx + 1}`}
-                          className="rounded-xl h-9 text-sm flex-1"
-                        />
-                        {subGroups.length > 1 && (
-                          <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            className="rounded-lg hover:bg-destructive/10 h-9 w-9"
-                            onClick={() => removeSubGroup(idx)}
-                            aria-label={`הסרת קבוצה ${sg.name}`}
-                          >
-                            <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                          </Button>
-                        )}
+                  {/* Mode selector */}
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => { setSubGroupMode("TIMESLOTS"); setSubGroups([]); }}
+                      className={cn(
+                        "flex-1 rounded-xl border px-3 py-2 text-sm text-center transition-colors min-h-[44px]",
+                        subGroupMode === "TIMESLOTS"
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "border-border hover:border-primary/50"
+                      )}
+                    >
+                      <Clock className="h-3.5 w-3.5 inline-block me-1" />
+                      משבצות זמן
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setSubGroupMode("MANUAL"); setSubGroups([]); if (subGroups.length === 0) addSubGroup(); }}
+                      className={cn(
+                        "flex-1 rounded-xl border px-3 py-2 text-sm text-center transition-colors min-h-[44px]",
+                        subGroupMode === "MANUAL"
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "border-border hover:border-primary/50",
+                        !groupId && "opacity-50 cursor-not-allowed"
+                      )}
+                      disabled={!groupId}
+                      title={!groupId ? "יש לבחור כיתה כדי לשבץ ילדים ידנית" : undefined}
+                    >
+                      <Users className="h-3.5 w-3.5 inline-block me-1" />
+                      שיבוץ ידני
+                    </button>
+                  </div>
+                  {subGroupMode === "MANUAL" && !groupId && (
+                    <p className="text-xs text-muted-foreground">יש לבחור כיתה כדי לשבץ ילדים ידנית</p>
+                  )}
+
+                  {/* TIMESLOTS mode */}
+                  {subGroupMode === "TIMESLOTS" && (
+                    <div className="space-y-3">
+                      <p className="text-xs text-muted-foreground">
+                        הגדירו טווח שעות ומשך כל משבצת. ההורים יבחרו בעצמם משבצת זמן.
+                      </p>
+                      <div className="grid grid-cols-2 gap-2">
+                        <TimePicker value={slotRangeStart} onChange={setSlotRangeStart} label="מ-" className="rounded-xl h-9" />
+                        <TimePicker value={slotRangeEnd} onChange={setSlotRangeEnd} label="עד" className="rounded-xl h-9" />
                       </div>
                       <div className="grid grid-cols-2 gap-2">
-                        <TimePicker
-                          value={sg.startTime}
-                          onChange={(v) => updateSubGroup(idx, "startTime", v)}
-                          label="התחלה"
-                          className="rounded-xl h-9"
-                        />
-                        <TimePicker
-                          value={sg.endTime}
-                          onChange={(v) => updateSubGroup(idx, "endTime", v)}
-                          label="סיום"
-                          className="rounded-xl h-9"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">
-                          מקסימום ילדים (אופציונלי)
-                        </Label>
-                        <Input
-                          type="number"
-                          min="1"
-                          value={sg.maxCapacity}
-                          onChange={(e) => updateSubGroup(idx, "maxCapacity", e.target.value)}
-                          placeholder="ללא הגבלה"
-                          className="rounded-xl h-9 text-sm"
-                        />
-                      </div>
-                      {/* Child assignment */}
-                      <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">ילדים בקבוצה</Label>
-                        <div className="flex flex-wrap gap-1.5">
-                          {roster.map((child) => {
-                            const isInThisGroup = sg.childIds.includes(child.id);
-                            const isInOtherGroup = !isInThisGroup && assignedChildIds.has(child.id);
-                            return (
-                              <button
-                                key={child.id}
-                                type="button"
-                                disabled={isInOtherGroup}
-                                aria-pressed={isInThisGroup}
-                                aria-label={`${child.name}${isInOtherGroup ? " (משובץ בקבוצה אחרת)" : ""}`}
-                                onClick={() => toggleChildInSubGroup(idx, child.id)}
-                                className={cn(
-                                  "text-sm px-3 py-1.5 rounded-lg border transition-colors min-h-[36px]",
-                                  isInThisGroup
-                                    ? "bg-primary text-primary-foreground border-primary"
-                                    : isInOtherGroup
-                                      ? "opacity-40 cursor-not-allowed border-border"
-                                      : "border-border hover:border-primary/50"
-                                )}
-                              >
-                                {child.name}
-                              </button>
-                            );
-                          })}
+                        <div className="space-y-1">
+                          <Label className="text-xs text-muted-foreground">משך משבצת (דקות)</Label>
+                          <Input
+                            type="number"
+                            min="5"
+                            step="5"
+                            value={slotInterval}
+                            onChange={(e) => setSlotInterval(e.target.value)}
+                            className="rounded-xl h-9 text-sm"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs text-muted-foreground">מקסימום ילדים למשבצת</Label>
+                          <Input
+                            type="number"
+                            min="1"
+                            value={slotCapacity}
+                            onChange={(e) => setSlotCapacity(e.target.value)}
+                            className="rounded-xl h-9 text-sm"
+                          />
                         </div>
                       </div>
-                    </div>
-                  ))}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="w-full rounded-xl"
+                        onClick={generateTimeslots}
+                      >
+                        יצירת משבצות
+                      </Button>
 
-                  {unassignedChildren.length > 0 && (
-                    <div className="flex items-start gap-1.5 text-xs text-amber-600" role="alert">
-                      <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-                      <span>
-                        {unassignedChildren.length} ילדים לא משובצים: {unassignedChildren.map((c) => c.name).join(", ")}
-                      </span>
+                      {/* Preview generated slots */}
+                      {subGroups.length > 0 && (
+                        <div className="space-y-1">
+                          <Label className="text-xs text-muted-foreground">{subGroups.length} משבצות נוצרו:</Label>
+                          <div className="grid grid-cols-2 gap-1.5">
+                            {subGroups.map((sg, idx) => (
+                              <div key={idx} className="flex items-center justify-between rounded-lg border border-border/40 px-2.5 py-1.5 text-xs">
+                                <span className="font-medium">{sg.startTime}-{sg.endTime}</span>
+                                <span className="text-muted-foreground">עד {sg.maxCapacity}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
 
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="w-full rounded-xl text-xs"
-                    onClick={addSubGroup}
-                  >
-                    <Plus className="h-3.5 w-3.5" data-icon="inline-start" />
-                    הוסיפו קבוצה נוספת
-                  </Button>
+                  {/* MANUAL mode */}
+                  {subGroupMode === "MANUAL" && groupId && (
+                    <div className="space-y-3">
+                      <p className="text-xs text-muted-foreground">
+                        שבצו ילדים לקבוצות. ילדים שלא שובצו יועברו אוטומטית לקבוצה הבאה.
+                      </p>
+                      {subGroups.map((sg, idx) => (
+                        <div key={idx} className="rounded-xl border border-border/40 p-3 space-y-2">
+                          <div className="flex items-center justify-between gap-2">
+                            <Input
+                              value={sg.name}
+                              onChange={(e) => updateSubGroup(idx, "name", e.target.value)}
+                              placeholder="שם קבוצה"
+                              aria-label={`שם קבוצת משנה ${idx + 1}`}
+                              className="rounded-xl h-9 text-sm flex-1"
+                            />
+                            {subGroups.length > 1 && (
+                              <Button
+                                variant="ghost"
+                                size="icon-sm"
+                                className="rounded-lg hover:bg-destructive/10 h-9 w-9"
+                                onClick={() => removeSubGroup(idx)}
+                                aria-label={`הסרת קבוצה ${sg.name}`}
+                              >
+                                <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                              </Button>
+                            )}
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <TimePicker value={sg.startTime} onChange={(v) => updateSubGroup(idx, "startTime", v)} label="התחלה" className="rounded-xl h-9" />
+                            <TimePicker value={sg.endTime} onChange={(v) => updateSubGroup(idx, "endTime", v)} label="סיום" className="rounded-xl h-9" />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs text-muted-foreground">ילדים בקבוצה</Label>
+                            <div className="flex flex-wrap gap-1.5">
+                              {roster.map((child) => {
+                                const isInThisGroup = sg.childIds.includes(child.id);
+                                const isInOtherGroup = !isInThisGroup && assignedChildIds.has(child.id);
+                                return (
+                                  <button
+                                    key={child.id}
+                                    type="button"
+                                    disabled={isInOtherGroup}
+                                    aria-pressed={isInThisGroup}
+                                    aria-label={`${child.name}${isInOtherGroup ? " (משובץ בקבוצה אחרת)" : ""}`}
+                                    onClick={() => toggleChildInSubGroup(idx, child.id)}
+                                    className={cn(
+                                      "text-sm px-3 py-1.5 rounded-lg border transition-colors min-h-[36px]",
+                                      isInThisGroup
+                                        ? "bg-primary text-primary-foreground border-primary"
+                                        : isInOtherGroup
+                                          ? "opacity-40 cursor-not-allowed border-border"
+                                          : "border-border hover:border-primary/50"
+                                    )}
+                                  >
+                                    {child.name}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+
+                      {unassignedChildren.length > 0 && (
+                        <div className="flex items-start gap-1.5 text-xs text-amber-600" role="alert">
+                          <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                          <span>
+                            {unassignedChildren.length} ילדים לא משובצים: {unassignedChildren.map((c) => c.name).join(", ")}
+                          </span>
+                        </div>
+                      )}
+
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="w-full rounded-xl text-xs"
+                        onClick={addSubGroup}
+                      >
+                        <Plus className="h-3.5 w-3.5" data-icon="inline-start" />
+                        הוסיפו קבוצה נוספת
+                      </Button>
+                    </div>
+                  )}
                 </div>
               )}
-              </>}
             </div>
 
             {createError && (
@@ -655,7 +768,9 @@ export function TeacherLessons({
                     {lesson.hasSubGroups && (
                       <span className="ms-1.5 inline-flex items-center gap-0.5 text-primary">
                         <SplitSquareHorizontal className="h-3 w-3" />
-                        {lesson.subGroups?.length} קבוצות
+                        {lesson.subGroupMode === "TIMESLOTS"
+                          ? `${lesson.subGroups?.length} משבצות`
+                          : `${lesson.subGroups?.length} קבוצות`}
                       </span>
                     )}
                   </p>

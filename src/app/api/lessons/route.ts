@@ -94,7 +94,7 @@ export async function POST(req: NextRequest) {
   const { error, session } = await requireRole("TEACHER", "SUPERADMIN");
   if (error) return error;
 
-  const { title, date, startTime, endTime, groupId, zoomLink, notes, recurrence, subGroups } =
+  const { title, date, startTime, endTime, groupId, zoomLink, notes, recurrence, subGroupMode, subGroups } =
     await req.json();
 
   if (!title?.trim() || !date || !startTime || !endTime) {
@@ -130,6 +130,7 @@ export async function POST(req: NextRequest) {
       zoomLink: zoomLink?.trim() || null,
       notes: notes?.trim() || null,
       hasSubGroups,
+      subGroupMode: hasSubGroups && ["MANUAL", "TIMESLOTS"].includes(subGroupMode) ? subGroupMode : "MANUAL",
       ...(hasSubGroups && {
         subGroups: {
           create: subGroups.map((sg: { name: string; startTime: string; endTime: string; maxCapacity?: number; childIds?: string[] }) => ({
