@@ -53,8 +53,8 @@ interface Lesson {
   notes: string | null;
   recurrence: string;
   hasSubGroups: boolean;
-  groupId: string;
-  group: { id: string; name: string; members?: { child: { id: string; name: string } }[] };
+  groupId: string | null;
+  group: { id: string; name: string; members?: { child: { id: string; name: string } }[] } | null;
   subGroups?: SubGroup[];
 }
 
@@ -100,7 +100,7 @@ export function TeacherLessons({
   });
   const [startTime, setStartTime] = useState("13:00");
   const [endTime, setEndTime] = useState("13:30");
-  const [groupId, setGroupId] = useState(groups[0]?.id ?? "");
+  const [groupId, setGroupId] = useState("");
   const [zoomLink, setZoomLink] = useState("");
   const [notes, setNotes] = useState("");
   const [recurrence, setRecurrence] = useState("ONCE");
@@ -133,7 +133,7 @@ export function TeacherLessons({
     setDate(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`);
     setStartTime("13:00");
     setEndTime("13:30");
-    setGroupId(groups[0]?.id ?? "");
+    setGroupId("");
     setZoomLink("");
     setNotes("");
     setRecurrence("ONCE");
@@ -180,7 +180,7 @@ export function TeacherLessons({
   const unassignedChildren = roster.filter((c) => !assignedChildIds.has(c.id));
 
   async function handleCreate() {
-    if (!title.trim() || !groupId || !date) return;
+    if (!title.trim() || !date) return;
     setLoading(true);
     setCreateError(null);
     try {
@@ -189,7 +189,7 @@ export function TeacherLessons({
         date,
         startTime,
         endTime,
-        groupId,
+        groupId: groupId || null,
         recurrence,
         zoomLink: zoomLink.trim() || null,
         notes: notes.trim() || null,
@@ -313,16 +313,14 @@ export function TeacherLessons({
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="lesson-group">קבוצה</Label>
+                <Label htmlFor="lesson-group">כיתה (אופציונלי)</Label>
                 <select
                   id="lesson-group"
                   value={groupId}
                   onChange={(e) => setGroupId(e.target.value)}
                   className="flex h-11 w-full rounded-xl border border-input bg-transparent px-3 py-1 text-sm"
                 >
-                  {groups.length === 0 && (
-                    <option value="">אין קבוצות - צרו קבוצה קודם</option>
-                  )}
+                  <option value="">ללא כיתה</option>
                   {groups.map((g) => (
                     <option key={g.id} value={g.id}>
                       {g.name}
@@ -409,8 +407,8 @@ export function TeacherLessons({
                 />
               </div>
 
-              {/* Sub-groups toggle */}
-              <div className="flex items-center gap-2 pt-2">
+              {/* Sub-groups toggle — only when a class is selected */}
+              {groupId && <><div className="flex items-center gap-2 pt-2">
                 <button
                   type="button"
                   role="switch"
@@ -547,6 +545,7 @@ export function TeacherLessons({
                   </Button>
                 </div>
               )}
+              </>}
             </div>
 
             {createError && (
@@ -559,7 +558,7 @@ export function TeacherLessons({
             <DialogFooter>
               <Button
                 onClick={handleCreate}
-                disabled={loading || !title.trim() || !groupId}
+                disabled={loading || !title.trim()}
                 className="rounded-xl h-11 font-medium"
               >
                 {loading && <Loader className="h-4 w-4 animate-spin" />}
@@ -602,7 +601,7 @@ export function TeacherLessons({
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm truncate" title={lesson.title}>{lesson.title}</p>
                   <p className="text-xs text-muted-foreground truncate">
-                    {lesson.group.name}
+                    {lesson.group?.name ?? "ללא כיתה"}
                     {lesson.recurrence !== "ONCE" && (
                       <span className="ms-1.5 inline-flex items-center gap-0.5 text-blue-600 dark:text-blue-400">
                         <Repeat className="h-3 w-3" />
@@ -697,7 +696,7 @@ export function TeacherLessons({
           <DialogHeader>
             <DialogTitle>עריכת שיעור</DialogTitle>
             <DialogDescription>
-              {editSlot?.group.name} - {editSlot ? formatDateHe(editSlot.date) : ""}
+              {editSlot?.group?.name ?? "ללא כיתה"} - {editSlot ? formatDateHe(editSlot.date) : ""}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3">

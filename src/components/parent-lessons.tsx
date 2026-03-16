@@ -33,7 +33,7 @@ interface Lesson {
   recurrence: string;
   hasSubGroups: boolean;
   teacher: { name: string | null };
-  group: { id: string; name: string };
+  group: { id: string; name: string } | null;
   subGroups?: SubGroup[];
 }
 
@@ -128,7 +128,7 @@ export function ParentLessons({
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm truncate" title={lesson.title}>{lesson.title}</p>
                       <p className="text-xs text-muted-foreground truncate">
-                        {lesson.group.name}
+                        {lesson.group?.name ?? "שיעור"}
                         {lesson.recurrence !== "ONCE" && (
                           <span className="ms-1 inline-flex items-center gap-0.5 text-blue-600 dark:text-blue-400">
                             <Repeat className="h-3 w-3" />

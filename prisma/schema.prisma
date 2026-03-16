@@ -290,12 +290,12 @@ model Lesson {
   notes         String?
   hasSubGroups  Boolean   @default(false)
   teacherId     String
-  groupId       String
+  groupId       String?
   googleEventId String?   // Google Calendar event ID for sync
   createdAt     DateTime  @default(now())
 
   teacher       User          @relation(fields: [teacherId], references: [id], onDelete: Cascade)
-  group         Group         @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  group         Group?        @relation(fields: [groupId], references: [id], onDelete: Cascade)
   subGroups     LessonGroup[]
 }
 

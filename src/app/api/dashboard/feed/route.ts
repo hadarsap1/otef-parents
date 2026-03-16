@@ -95,7 +95,7 @@ export async function GET(req: NextRequest) {
         type: "teacher-lesson" as const,
         id: lesson.id,
         title: lesson.title,
-        groupName: lesson.group.name,
+        groupName: lesson.group?.name ?? "",
         teacherName: lesson.teacher.name,
         startTime: displayStartTime,
         endTime: displayEndTime,

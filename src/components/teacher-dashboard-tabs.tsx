@@ -31,8 +31,8 @@ interface Lesson {
   notes: string | null;
   recurrence: string;
   hasSubGroups: boolean;
-  groupId: string;
-  group: { id: string; name: string; members?: { child: { id: string; name: string } }[] };
+  groupId: string | null;
+  group: { id: string; name: string; members?: { child: { id: string; name: string } }[] } | null;
   subGroups?: SubGroup[];
 }
 

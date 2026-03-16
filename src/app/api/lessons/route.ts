@@ -89,7 +89,7 @@ export async function GET() {
   return NextResponse.json(filtered);
 }
 
-// POST /api/lessons - teacher creates a lesson (groupId required)
+// POST /api/lessons - teacher creates a lesson (groupId optional)
 export async function POST(req: NextRequest) {
   const { error, session } = await requireRole("TEACHER", "SUPERADMIN");
   if (error) return error;
@@ -97,21 +97,23 @@ export async function POST(req: NextRequest) {
   const { title, date, startTime, endTime, groupId, zoomLink, notes, recurrence, subGroups } =
     await req.json();
 
-  if (!title?.trim() || !date || !startTime || !endTime || !groupId) {
+  if (!title?.trim() || !date || !startTime || !endTime) {
     return NextResponse.json(
-      { error: "title, date, startTime, endTime, groupId are required" },
+      { error: "title, date, startTime, endTime are required" },
       { status: 400 }
     );
   }
 
   const validRecurrence = ["ONCE", "DAILY", "WEEKLY"].includes(recurrence) ? recurrence : "ONCE";
 
-  // Verify teacher owns the group (SUPERADMIN sees all)
-  const group = await prisma.group.findFirst({
-    where: { id: groupId, ...teacherFilter(session) },
-  });
-  if (!group) {
-    return NextResponse.json({ error: "Group not found" }, { status: 404 });
+  // If groupId provided, verify teacher owns the group
+  if (groupId) {
+    const group = await prisma.group.findFirst({
+      where: { id: groupId, ...teacherFilter(session) },
+    });
+    if (!group) {
+      return NextResponse.json({ error: "Group not found" }, { status: 404 });
+    }
   }
 
   const hasSubGroups = Array.isArray(subGroups) && subGroups.length > 0;
@@ -124,7 +126,7 @@ export async function POST(req: NextRequest) {
       endTime,
       recurrence: validRecurrence,
       teacherId: session.user.id,
-      groupId,
+      groupId: groupId || null,
       zoomLink: zoomLink?.trim() || null,
       notes: notes?.trim() || null,
       hasSubGroups,

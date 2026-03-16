@@ -136,7 +136,7 @@ export async function POST(req: NextRequest) {
 
         return {
           title: lesson.title,
-          groupName: lesson.group.name,
+          groupName: lesson.group?.name ?? "",
           teacherName: lesson.teacher.name,
           startTime,
           endTime,
