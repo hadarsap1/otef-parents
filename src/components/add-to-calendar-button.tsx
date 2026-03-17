@@ -5,7 +5,7 @@ import { Calendar, Check, Loader2, AlertCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface AddToCalendarButtonProps {
-  type: "personal" | "lesson" | "playdate";
+  type: "personal" | "lesson" | "playdate" | "teacher-lesson";
   id: string;
   className?: string;
   compact?: boolean;

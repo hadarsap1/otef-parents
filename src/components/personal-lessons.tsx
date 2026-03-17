@@ -101,7 +101,7 @@ export function PersonalLessons({ items }: { items: ScheduleItemData[] }) {
                 <span className="text-sm font-semibold">
                   {formatTime(item.startTime)}
                 </span>
-                <span className="text-[11px] text-muted-foreground">
+                <span className="text-xs text-muted-foreground">
                   {formatTime(item.endTime)}
                 </span>
               </div>
@@ -124,7 +124,7 @@ export function PersonalLessons({ items }: { items: ScheduleItemData[] }) {
                     href={item.zoomUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-primary/10 transition-colors"
+                    className="flex h-11 w-11 items-center justify-center rounded-lg hover:bg-primary/10 transition-colors"
                     title="קישור לזום"
                   >
                     <Video className="h-4 w-4 text-primary" />
@@ -133,7 +133,7 @@ export function PersonalLessons({ items }: { items: ScheduleItemData[] }) {
                 <AddToCalendarButton type="lesson" id={item.id} compact />
                 <button
                   onClick={() => setConfirmDeleteId(item.id)}
-                  className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-destructive/10 transition-colors"
+                  className="flex h-11 w-11 items-center justify-center rounded-lg hover:bg-destructive/10 transition-colors"
                   title="מחיקה"
                   aria-label="מחיקת שיעור"
                 >

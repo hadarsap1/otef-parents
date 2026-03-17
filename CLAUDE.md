@@ -59,7 +59,7 @@ npx prisma db push   # Push schema to database
 - `User` → `Child` (parentId), `ChildParent` (co-parenting many-to-many)
 - `School` → `SchoolMember` (user ↔ school, roles: OWNER/ADMIN/TEACHER)
 - `School` → `Group` → `GroupMember` (children in classes)
-- `Lesson` → `LessonGroup` → `LessonGroupMember` (sub-groups with timeslots)
+- `Lesson` → `LessonGroup` → `LessonGroupMember` (sub-groups with timeslots). Lessons have `isEnrichment` flag for optional/non-mandatory lessons (העשרה)
 - `Playdate` → `PlaydateParticipant`
 - `ScheduleItem` — per-child lesson instances
 - `PersonalEvent` — user-created events

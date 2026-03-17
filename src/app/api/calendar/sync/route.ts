@@ -89,6 +89,47 @@ export async function POST(req: NextRequest) {
       break;
     }
 
+    case "teacher-lesson": {
+      const tLesson = await prisma.lesson.findFirst({
+        where: {
+          id,
+          group: {
+            members: {
+              some: {
+                child: {
+                  OR: [
+                    { parentId: session.user.id },
+                    { childParents: { some: { userId: session.user.id } } },
+                  ],
+                },
+              },
+            },
+          },
+        },
+        include: {
+          teacher: { select: { name: true } },
+          group: { select: { name: true } },
+        },
+      });
+      if (!tLesson) {
+        return NextResponse.json({ error: "Lesson not found" }, { status: 404 });
+      }
+      const tDate = tLesson.date.toISOString().split("T")[0];
+      const tDesc = [
+        tLesson.notes,
+        tLesson.teacher.name && `מורה: ${tLesson.teacher.name}`,
+        tLesson.zoomLink && `Zoom: ${tLesson.zoomLink}`,
+      ].filter(Boolean).join("\n") || null;
+      calendarEvent = {
+        title: `${tLesson.title}${tLesson.group ? ` (${tLesson.group.name})` : ""}`,
+        date: tLesson.date.toISOString(),
+        startTime: tLesson.startTime,
+        endTime: tLesson.endTime,
+        description: tDesc,
+      };
+      break;
+    }
+
     case "playdate": {
       const playdate = await prisma.playdate.findFirst({
         where: {
@@ -160,6 +201,9 @@ export async function POST(req: NextRequest) {
         break;
       case "lesson":
         await prisma.scheduleItem.update({ where: { id }, data: { googleEventId } });
+        break;
+      case "teacher-lesson":
+        await prisma.lesson.update({ where: { id }, data: { googleEventId } });
         break;
       case "playdate":
         await prisma.playdate.update({ where: { id }, data: { googleEventId } });

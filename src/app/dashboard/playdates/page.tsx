@@ -250,7 +250,7 @@ export default function PlaydatesPage() {
   }
 
   const selectClass =
-    "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm";
+    "flex h-11 w-full rounded-xl border border-input bg-transparent px-3 py-1 text-sm shadow-sm";
 
   const hasGroups = groups.length > 0;
 
@@ -276,6 +276,7 @@ export default function PlaydatesPage() {
                     value={selectedGroupId}
                     onChange={(e) => setSelectedGroupId(e.target.value)}
                     className={selectClass}
+                    dir="rtl"
                   >
                     {groups.map((g) => (
                       <option key={g.id} value={g.id}>
@@ -291,6 +292,7 @@ export default function PlaydatesPage() {
                     value={address}
                     onChange={(e) => setAddress(e.target.value)}
                     placeholder="רחוב, עיר"
+                    autoComplete="street-address"
                     required
                   />
                 </div>
@@ -511,6 +513,7 @@ export default function PlaydatesPage() {
                                 setSelectedChildId(e.target.value)
                               }
                               className={selectClass}
+                              dir="rtl"
                               aria-label="בחר ילד/ה להצטרפות"
                             >
                               {children.map((c) => (

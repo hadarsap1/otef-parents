@@ -277,6 +277,11 @@ export default function ChildrenPage() {
                     placeholder="לדוגמה: AB3K7X"
                     maxLength={6}
                     dir="ltr"
+                    inputMode="text"
+                    autoCapitalize="characters"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    autoComplete="off"
                     className="font-mono text-center text-lg tracking-widest"
                     disabled={redeemLoading}
                   />
@@ -335,6 +340,7 @@ export default function ChildrenPage() {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="שם הילד/ה"
+                    autoComplete="off"
                     required
                   />
                 </div>
@@ -562,7 +568,7 @@ export default function ChildrenPage() {
                           <Button
                             size="sm"
                             variant="outline"
-                            className="h-7 text-xs"
+                            className="h-9 text-xs"
                             disabled={claimingId === child.id}
                             onClick={() => claimChild(child.id)}
                           >

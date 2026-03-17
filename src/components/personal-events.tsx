@@ -273,7 +273,7 @@ export function PersonalEventRow({
               key={item.title}
               type="button"
               onClick={() => { setEmoji(item.emoji); setTitle(item.title); }}
-              className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
+              className={`text-xs px-3 py-2 rounded-full border transition-colors min-h-[36px] ${
                 title === item.title && emoji === item.emoji
                   ? "bg-primary/10 border-primary/30 text-primary font-medium"
                   : "border-border/60 hover:bg-muted/50"
@@ -340,54 +340,56 @@ export function PersonalEventRow({
 
   return (
     <div
-      className="flex items-center gap-3 py-3 cursor-pointer active:bg-muted/50 transition-colors rounded-lg -mx-1 px-1"
+      className="py-3 cursor-pointer active:bg-muted/50 transition-colors rounded-lg -mx-1 px-1"
       onClick={() => setEditing(true)}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setEditing(true); }}
     >
-      <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-lg shrink-0">
-        {event.emoji || "📌"}
+      <div className="flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-lg shrink-0">
+          {event.emoji || "📌"}
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-medium text-sm">{event.title}</p>
+          {(event.startTime || event.notes) && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+              {event.startTime && (
+                <span className="flex items-center gap-1">
+                  <Clock className="h-3 w-3" />
+                  {event.startTime}
+                  {event.endTime && `-${event.endTime}`}
+                </span>
+              )}
+              {event.notes && (
+                <span className="truncate">{event.notes}</span>
+              )}
+            </div>
+          )}
+        </div>
       </div>
-      <div className="flex-1 min-w-0">
-        <p className="font-medium text-sm">{event.title}</p>
-        {(event.startTime || event.notes) && (
-          <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-            {event.startTime && (
-              <span className="flex items-center gap-1">
-                <Clock className="h-3 w-3" />
-                {event.startTime}
-                {event.endTime && `-${event.endTime}`}
-              </span>
-            )}
-            {event.notes && (
-              <span className="truncate">{event.notes}</span>
-            )}
-          </div>
-        )}
+      <div className="flex items-center gap-2 mt-2 ms-13" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+        <AddToCalendarButton type="personal" id={event.id} />
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          className="shrink-0 rounded-lg hover:bg-muted"
+          onClick={() => setEditing(true)}
+          aria-label="עריכת אירוע"
+        >
+          <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+        </Button>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          className="shrink-0 rounded-lg hover:bg-destructive/10"
+          onClick={() => handleDelete()}
+          disabled={deleting}
+          aria-label="מחיקת אירוע"
+        >
+          <Trash2 className="h-3.5 w-3.5 text-destructive" />
+        </Button>
       </div>
-      <div onClick={(e: React.MouseEvent) => e.stopPropagation()}>
-        <AddToCalendarButton type="personal" id={event.id} compact />
-      </div>
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        className="shrink-0 rounded-lg hover:bg-muted"
-        onClick={(e: React.MouseEvent) => { e.stopPropagation(); setEditing(true); }}
-        aria-label="עריכת אירוע"
-      >
-        <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        className="shrink-0 rounded-lg hover:bg-destructive/10"
-        onClick={(e: React.MouseEvent) => { e.stopPropagation(); handleDelete(); }}
-        disabled={deleting}
-        aria-label="מחיקת אירוע"
-      >
-        <Trash2 className="h-3.5 w-3.5 text-destructive" />
-      </Button>
     </div>
   );
 }

@@ -290,6 +290,7 @@ model Lesson {
   notes         String?
   hasSubGroups  Boolean   @default(false)
   subGroupMode  String    @default("MANUAL") // "MANUAL" | "TIMESLOTS"
+  isEnrichment  Boolean   @default(false) // העשרה — optional/not mandatory
   teacherId     String
   groupId       String?
   googleEventId String?   // Google Calendar event ID for sync

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Clock, ChevronDown, ChevronUp, Video, SplitSquareHorizontal, Repeat, Check, Loader2 as Loader, AlertTriangle } from "lucide-react";
+import { Clock, ChevronDown, ChevronUp, Video, SplitSquareHorizontal, Repeat, Check, Loader2 as Loader, AlertTriangle, Sparkles } from "lucide-react";
 import {
   Card,
   CardHeader,
@@ -40,6 +40,7 @@ interface Lesson {
   recurrence: string;
   hasSubGroups: boolean;
   subGroupMode?: string;
+  isEnrichment?: boolean;
   teacher: { name: string | null };
   group: { id: string; name: string } | null;
   subGroups?: SubGroup[];
@@ -136,7 +137,7 @@ function TimeslotPicker({
                   type="button"
                   onClick={() => { setSelectedChildId(child.id); setError(null); }}
                   className={cn(
-                    "text-sm px-3 py-1.5 rounded-lg border transition-colors min-h-[36px]",
+                    "text-sm px-3 py-2 rounded-lg border transition-colors min-h-[44px]",
                     selectedChildId === child.id
                       ? "bg-primary text-primary-foreground border-primary"
                       : "border-border hover:border-primary/50"
@@ -307,7 +308,7 @@ export function ParentLessons({
                         <span className="text-sm font-semibold" dir="ltr">
                           {displayTime.start}
                         </span>
-                        <span className="text-[11px] text-muted-foreground" dir="ltr">
+                        <span className="text-xs text-muted-foreground" dir="ltr">
                           {displayTime.end}
                         </span>
                       </div>
@@ -316,6 +317,12 @@ export function ParentLessons({
                         <p className="font-medium text-sm truncate" title={lesson.title}>{lesson.title}</p>
                         <p className="text-xs text-muted-foreground truncate">
                           {lesson.group?.name ?? "שיעור"}
+                          {lesson.isEnrichment && (
+                            <span className="ms-1 inline-flex items-center gap-0.5 text-amber-600 dark:text-amber-400">
+                              <Sparkles className="h-3 w-3" />
+                              העשרה
+                            </span>
+                          )}
                           {lesson.recurrence !== "ONCE" && (
                             <span className="ms-1 inline-flex items-center gap-0.5 text-blue-600 dark:text-blue-400">
                               <Repeat className="h-3 w-3" />
@@ -351,13 +358,13 @@ export function ParentLessons({
                             href={lesson.zoomLink}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-primary/10 transition-colors"
+                            className="flex h-11 w-11 items-center justify-center rounded-lg hover:bg-primary/10 transition-colors"
                             title="קישור לזום"
                           >
                             <Video className="h-4 w-4 text-primary" />
                           </a>
                         )}
-                        <AddToCalendarButton type="lesson" id={lesson.id} compact />
+                        <AddToCalendarButton type="teacher-lesson" id={lesson.id} compact />
                       </div>
                     </div>
 

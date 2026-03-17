@@ -124,8 +124,9 @@ function LessonRow({
 
   const live = isHappeningNow(item.startTime, item.endTime);
 
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
   async function handleDelete() {
-    if (!confirm("האם למחוק את השיעור?")) return;
     setDeleting(true);
     await fetch(`/api/schedule/${item.id}`, { method: "DELETE" });
     onDelete?.(item.id);
@@ -323,13 +324,45 @@ function LessonRow({
           variant="ghost"
           size="icon-sm"
           className="rounded-lg hover:bg-destructive/10"
-          onClick={(e: React.MouseEvent) => { e.stopPropagation(); handleDelete(); }}
+          onClick={(e: React.MouseEvent) => { e.stopPropagation(); setShowDeleteConfirm(true); }}
           disabled={deleting}
           aria-label="מחיקת שיעור"
         >
           <Trash2 className="h-3.5 w-3.5 text-destructive" />
         </Button>
       </div>
+
+      {/* Delete confirmation */}
+      {showDeleteConfirm && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+          onClick={(e: React.MouseEvent) => { e.stopPropagation(); setShowDeleteConfirm(false); }}
+        >
+          <div
+            className="bg-background rounded-2xl p-6 mx-4 max-w-sm w-full shadow-xl space-y-4"
+            onClick={(e: React.MouseEvent) => e.stopPropagation()}
+          >
+            <h3 className="font-semibold text-lg">מחיקת שיעור</h3>
+            <p className="text-sm text-muted-foreground">האם למחוק את השיעור? הפעולה לא ניתנת לביטול.</p>
+            <div className="flex gap-2 justify-end">
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirm(false)}
+                className="px-4 py-2 text-sm rounded-xl border border-border hover:bg-muted transition-colors min-h-[44px]"
+              >
+                ביטול
+              </button>
+              <button
+                type="button"
+                onClick={() => { setShowDeleteConfirm(false); handleDelete(); }}
+                className="px-4 py-2 text-sm rounded-xl bg-destructive/10 text-destructive hover:bg-destructive/20 transition-colors min-h-[44px]"
+              >
+                מחיקה
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -347,7 +380,7 @@ function TeacherLessonRow({ item }: { item: TeacherLessonItem }) {
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5">
           <p className="font-medium text-sm truncate" title={item.title}>{item.title}</p>
-          <span className="text-[10px] text-muted-foreground bg-muted rounded px-1.5 py-0.5 shrink-0">מהמורה</span>
+          <span className="text-xs text-muted-foreground bg-muted rounded px-1.5 py-0.5 shrink-0">מהמורה</span>
         </div>
         <p className="text-xs text-muted-foreground truncate">
           {item.groupName}
@@ -371,6 +404,11 @@ function TeacherLessonRow({ item }: { item: TeacherLessonItem }) {
             {item.notes}
           </p>
         )}
+      </div>
+
+      {/* Calendar button */}
+      <div className="flex flex-col gap-1 shrink-0">
+        <AddToCalendarButton type="teacher-lesson" id={item.id} compact />
       </div>
     </div>
   );

@@ -52,7 +52,7 @@ export function BottomNav({ role }: { role?: string }) {
               href={href}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "flex flex-col items-center gap-0.5 text-[11px] transition-all active:scale-95 min-w-[60px] py-1.5 rounded-xl",
+                "flex flex-col items-center gap-0.5 text-xs transition-all active:scale-95 min-w-[60px] py-1.5 rounded-xl",
                 active
                   ? "text-primary font-semibold"
                   : "text-muted-foreground hover:text-foreground"

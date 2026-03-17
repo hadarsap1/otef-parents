@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Clock, Trash2, Video, Pencil, Users, Copy, SplitSquareHorizontal, Repeat, CalendarDays, AlertTriangle, Loader2 as Loader } from "lucide-react";
+import { Plus, Clock, Trash2, Video, Pencil, Users, Copy, SplitSquareHorizontal, Repeat, CalendarDays, AlertTriangle, Loader2 as Loader, Sparkles, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -60,6 +60,7 @@ interface Lesson {
   recurrence: string;
   hasSubGroups: boolean;
   subGroupMode?: string;
+  isEnrichment?: boolean;
   groupId: string | null;
   group: { id: string; name: string; school?: { name: string } | null; members?: { child: { id: string; name: string } }[] } | null;
   subGroups?: SubGroup[];
@@ -110,7 +111,8 @@ export function TeacherLessons({
   const [startTime, setStartTime] = useState("13:00");
   const [endTime, setEndTime] = useState("13:30");
   const [schoolId, setSchoolId] = useState(schools[0]?.id ?? "");
-  const [groupId, setGroupId] = useState("");
+  const [groupIds, setGroupIds] = useState<string[]>([]);
+  const [isEnrichment, setIsEnrichment] = useState(false);
   const [zoomLink, setZoomLink] = useState("");
   const [notes, setNotes] = useState("");
   const [recurrence, setRecurrence] = useState("ONCE");
@@ -150,7 +152,8 @@ export function TeacherLessons({
     setStartTime("13:00");
     setEndTime("13:30");
     setSchoolId(schools[0]?.id ?? "");
-    setGroupId("");
+    setGroupIds([]);
+    setIsEnrichment(false);
     setZoomLink("");
     setNotes("");
     setRecurrence("ONCE");
@@ -242,8 +245,9 @@ export function TeacherLessons({
     ? groups.filter((g) => g.schoolName === selectedSchool?.name)
     : groups;
 
-  // Get roster for selected group
-  const selectedGroup = groups.find((g) => g.id === groupId);
+  // Get roster for first selected group (for manual sub-group assignment)
+  const firstGroupId = groupIds[0] ?? "";
+  const selectedGroup = groups.find((g) => g.id === firstGroupId);
   const roster = selectedGroup?.members?.map((m) => m.child) ?? [];
 
   // Find assigned children across all sub-groups
@@ -260,8 +264,9 @@ export function TeacherLessons({
         date,
         startTime,
         endTime,
-        groupId: groupId || null,
+        groupIds: groupIds.length > 0 ? groupIds : undefined,
         recurrence,
+        isEnrichment,
         zoomLink: zoomLink.trim() || null,
         notes: notes.trim() || null,
       };
@@ -393,7 +398,7 @@ export function TeacherLessons({
                     value={schoolId}
                     onChange={(e) => {
                       setSchoolId(e.target.value);
-                      setGroupId(""); // reset class when school changes
+                      setGroupIds([]); // reset classes when school changes
                     }}
                     dir="rtl"
                     className="flex h-11 w-full rounded-xl border border-input bg-transparent px-3 py-1 text-sm"
@@ -407,26 +412,58 @@ export function TeacherLessons({
                 </div>
               )}
 
-              {/* Class selector */}
+              {/* Class selector — multi-select */}
               <div className="space-y-1.5">
-                <Label htmlFor="lesson-group">כיתה (אופציונלי)</Label>
-                <select
-                  id="lesson-group"
-                  value={groupId}
-                  onChange={(e) => setGroupId(e.target.value)}
-                  dir="rtl"
-                  className="flex h-11 w-full rounded-xl border border-input bg-transparent px-3 py-1 text-sm"
-                >
-                  <option value="">ללא כיתה</option>
-                  {filteredGroups.map((g) => (
-                    <option key={g.id} value={g.id}>
-                      {g.name}
-                    </option>
-                  ))}
-                </select>
-                {filteredGroups.length === 0 && schoolId && (
+                <div className="flex items-center justify-between">
+                  <Label>כיתות</Label>
+                  {filteredGroups.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (groupIds.length === filteredGroups.length) {
+                          setGroupIds([]);
+                        } else {
+                          setGroupIds(filteredGroups.map((g) => g.id));
+                        }
+                      }}
+                      className="text-xs text-primary hover:underline"
+                    >
+                      {groupIds.length === filteredGroups.length ? "נקה הכל" : "בחר הכל"}
+                    </button>
+                  )}
+                </div>
+                {filteredGroups.length > 0 ? (
+                  <div className="flex flex-wrap gap-1.5">
+                    {filteredGroups.map((g) => {
+                      const selected = groupIds.includes(g.id);
+                      return (
+                        <button
+                          key={g.id}
+                          type="button"
+                          aria-pressed={selected}
+                          onClick={() => {
+                            setGroupIds((prev) =>
+                              selected
+                                ? prev.filter((id) => id !== g.id)
+                                : [...prev, g.id]
+                            );
+                          }}
+                          className={cn(
+                            "text-sm px-3 py-1.5 rounded-xl border transition-colors min-h-[36px] flex items-center gap-1.5",
+                            selected
+                              ? "bg-primary text-primary-foreground border-primary"
+                              : "border-border hover:border-primary/50"
+                          )}
+                        >
+                          {selected && <Check className="h-3 w-3" />}
+                          {g.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ) : schoolId ? (
                   <p className="text-xs text-muted-foreground">אין כיתות בבית הספר הנבחר</p>
-                )}
+                ) : null}
               </div>
 
               <div className="space-y-1.5">
@@ -507,6 +544,32 @@ export function TeacherLessons({
                 />
               </div>
 
+              {/* Enrichment toggle */}
+              <div className="flex items-center gap-2 pt-2">
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={isEnrichment}
+                  aria-label="שיעור העשרה"
+                  onClick={() => setIsEnrichment(!isEnrichment)}
+                  className={cn(
+                    "relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors",
+                    isEnrichment ? "bg-amber-500" : "bg-input"
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "pointer-events-none inline-block h-5 w-5 rounded-full bg-background shadow-lg ring-0 transition-transform",
+                      isEnrichment ? "-translate-x-5" : "translate-x-0"
+                    )}
+                  />
+                </button>
+                <Label className="cursor-pointer" onClick={() => setIsEnrichment(!isEnrichment)}>
+                  <Sparkles className="h-3.5 w-3.5 inline-block me-1 text-amber-500" />
+                  העשרה (לא חובה)
+                </Label>
+              </div>
+
               {/* Sub-groups toggle */}
               <div className="flex items-center gap-2 pt-2">
                 <button
@@ -547,7 +610,6 @@ export function TeacherLessons({
                       aria-label="מצב: משבצות זמן — ההורים בוחרים משבצת"
                       onClick={() => {
                         if (subGroupMode === "TIMESLOTS") return;
-                        if (subGroups.length > 0 && !confirm("מעבר מצב ימחק את הקבוצות הקיימות. להמשיך?")) return;
                         setSubGroupMode("TIMESLOTS");
                         setSubGroups([]);
                         setSlotError(null);
@@ -569,8 +631,7 @@ export function TeacherLessons({
                       aria-label="מצב: שיבוץ ידני — המורה משבץ ילדים"
                       onClick={() => {
                         if (subGroupMode === "MANUAL") return;
-                        if (!groupId) return;
-                        if (subGroups.length > 0 && !confirm("מעבר מצב ימחק את המשבצות הקיימות. להמשיך?")) return;
+                        if (groupIds.length === 0) return;
                         setSubGroupMode("MANUAL");
                         setSubGroups([]);
                         addSubGroup();
@@ -580,16 +641,16 @@ export function TeacherLessons({
                         subGroupMode === "MANUAL"
                           ? "bg-primary text-primary-foreground border-primary"
                           : "border-border hover:border-primary/50",
-                        !groupId && "opacity-50 cursor-not-allowed"
+                        groupIds.length === 0 && "opacity-50 cursor-not-allowed"
                       )}
-                      disabled={!groupId}
-                      title={!groupId ? "יש לבחור כיתה כדי לשבץ ילדים ידנית" : undefined}
+                      disabled={groupIds.length === 0}
+                      title={groupIds.length === 0 ? "יש לבחור כיתה כדי לשבץ ילדים ידנית" : undefined}
                     >
                       <Users className="h-3.5 w-3.5 inline-block me-1" />
                       שיבוץ ידני
                     </button>
                   </div>
-                  {subGroupMode === "MANUAL" && !groupId && (
+                  {subGroupMode === "MANUAL" && groupIds.length === 0 && (
                     <p className="text-xs text-muted-foreground">יש לבחור כיתה כדי לשבץ ילדים ידנית</p>
                   )}
 
@@ -665,7 +726,7 @@ export function TeacherLessons({
                   )}
 
                   {/* MANUAL mode */}
-                  {subGroupMode === "MANUAL" && groupId && (
+                  {subGroupMode === "MANUAL" && groupIds.length > 0 && (
                     <div className="space-y-3">
                       <p className="text-xs text-muted-foreground">
                         שבצו ילדים לקבוצות ידנית. ילדים שלא שובצו לא יראו את השיעור.
@@ -803,7 +864,7 @@ export function TeacherLessons({
                   <span className="text-sm font-semibold">
                     {lesson.startTime}
                   </span>
-                  <span className="text-[11px] text-muted-foreground">
+                  <span className="text-xs text-muted-foreground">
                     {lesson.endTime}
                   </span>
                 </div>
@@ -816,6 +877,12 @@ export function TeacherLessons({
                       <span className="ms-1.5 inline-flex items-center gap-0.5 text-blue-600 dark:text-blue-400">
                         <Repeat className="h-3 w-3" />
                         {lesson.recurrence === "WEEKLY" ? "שבועי" : "יומי"}
+                      </span>
+                    )}
+                    {lesson.isEnrichment && (
+                      <span className="ms-1.5 inline-flex items-center gap-0.5 text-amber-600 dark:text-amber-400">
+                        <Sparkles className="h-3 w-3" />
+                        העשרה
                       </span>
                     )}
                     {lesson.hasSubGroups && (
