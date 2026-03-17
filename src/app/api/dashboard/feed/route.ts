@@ -68,7 +68,7 @@ export async function GET(req: NextRequest) {
       })
     : [];
 
-  // Filter: WEEKLY must match day-of-week, sub-grouped must include child, past end-time hidden
+  // Filter: WEEKLY must match day-of-week, sub-grouped must include child
   const filteredTeacherLessons = teacherLessons
     .filter((lesson) => {
       // WEEKLY: only show on matching day of week
@@ -78,14 +78,6 @@ export async function GET(req: NextRequest) {
       return lesson.subGroups.some((sg) =>
         sg.members.some((m) => childIds.includes(m.childId))
       );
-    })
-    .filter((lesson) => {
-      // When viewing today, hide lessons whose end time has passed
-      if (!isViewingToday) return true;
-      const effectiveEndTime = lesson.hasSubGroups
-        ? lesson.subGroups.find((sg) => sg.members.some((m) => childIds.includes(m.childId)))?.endTime ?? lesson.endTime
-        : lesson.endTime;
-      return effectiveEndTime > israelTime;
     })
     .map((lesson) => {
       let displayStartTime = lesson.startTime;
@@ -115,6 +107,7 @@ export async function GET(req: NextRequest) {
         notes: lesson.notes,
         recurrence: lesson.recurrence,
         subGroupName,
+        isPast: isViewingToday && displayEndTime <= israelTime,
       };
     });
 
@@ -127,13 +120,11 @@ export async function GET(req: NextRequest) {
     orderBy: [{ startTime: "asc" }, { createdAt: "asc" }],
   });
 
-  // Fetch lessons for today (filter out past ones when viewing today)
-  const scheduleEndFilter = isViewingToday ? { gte: new Date() } : { gte: dayStart };
+  // Fetch lessons for today
   const lessons = await prisma.scheduleItem.findMany({
     where: {
       childId: { in: childIds },
       startTime: { gte: dayStart, lte: dayEnd },
-      endTime: scheduleEndFilter,
     },
     include: { child: { select: { id: true, name: true } } },
     orderBy: { startTime: "asc" },
@@ -218,6 +209,7 @@ export async function GET(req: NextRequest) {
       endTime: l.endTime.toISOString(),
       zoomUrl: l.zoomUrl,
       notes: l.notes,
+      isPast: isViewingToday && l.endTime < new Date(),
     })),
     playdates: allPlaydates
       .sort((a, b) => a.dateTime.getTime() - b.dateTime.getTime())

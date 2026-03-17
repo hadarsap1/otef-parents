@@ -37,6 +37,7 @@ interface Lesson {
   endTime: string;
   zoomUrl: string | null;
   notes: string | null;
+  isPast?: boolean;
 }
 
 interface PlaydateItem {
@@ -77,6 +78,7 @@ interface TeacherLessonItem {
   zoomLink: string | null;
   notes: string | null;
   subGroupName: string | null;
+  isPast?: boolean;
 }
 
 interface FeedData {
@@ -544,6 +546,7 @@ export function DailyFeed({ date }: { date?: string }) {
   const [data, setData] = useState<FeedData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [showPastLessons, setShowPastLessons] = useState(false);
 
   const dateStr = date || (() => {
     const now = new Date();
@@ -655,6 +658,12 @@ export function DailyFeed({ date }: { date?: string }) {
     );
   }
 
+  const upcomingLessons = data.lessons.filter((l) => !l.isPast);
+  const pastLessons = data.lessons.filter((l) => l.isPast);
+  const upcomingTeacherLessons = (data.teacherLessons ?? []).filter((l) => !l.isPast);
+  const pastTeacherLessons = (data.teacherLessons ?? []).filter((l) => l.isPast);
+  const hasUpcomingLessons = upcomingLessons.length > 0 || upcomingTeacherLessons.length > 0;
+  const hasPastLessons = pastLessons.length > 0 || pastTeacherLessons.length > 0;
   const hasLessons = data.lessons.length > 0;
   const hasTeacherLessons = (data.teacherLessons?.length ?? 0) > 0;
   const hasAnyLessons = hasLessons || hasTeacherLessons;
@@ -707,35 +716,75 @@ export function DailyFeed({ date }: { date?: string }) {
           </div>
         </CardHeader>
         <CardContent>
-          {hasAnyLessons ? (
+          {hasUpcomingLessons ? (
             <div className="space-y-0">
-              {/* Teacher-created lessons (read-only) */}
-              {(data.teacherLessons ?? []).map((item, i) => (
+              {upcomingTeacherLessons.map((item, i) => (
                 <div
                   key={`tl-${item.id}`}
                   className={cn(
-                    (i < (data.teacherLessons?.length ?? 0) - 1 || hasLessons) &&
+                    (i < upcomingTeacherLessons.length - 1 || upcomingLessons.length > 0) &&
                       "border-b border-dashed"
                   )}
                 >
                   <TeacherLessonRow item={item} />
                 </div>
               ))}
-              {/* Parent-created lessons (editable) */}
-              {data.lessons.map((item, i) => (
+              {upcomingLessons.map((item, i) => (
                 <LessonRow
                   key={item.id}
                   item={item}
-                  isLast={i === data.lessons.length - 1}
+                  isLast={i === upcomingLessons.length - 1}
                   onDelete={handleDeleteLesson}
                   onUpdate={handleUpdateLesson}
                 />
               ))}
             </div>
-          ) : (
+          ) : !hasPastLessons ? (
             <p className="text-sm text-muted-foreground py-2">
               אין שיעורים היום.
             </p>
+          ) : (
+            <p className="text-sm text-muted-foreground py-2">
+              כל השיעורים של היום הסתיימו.
+            </p>
+          )}
+
+          {/* Past lessons - collapsible */}
+          {hasPastLessons && (
+            <div className={cn(hasUpcomingLessons && "mt-3 pt-3 border-t border-border/40")}>
+              <button
+                type="button"
+                onClick={() => setShowPastLessons(!showPastLessons)}
+                className="flex items-center justify-between w-full text-sm text-muted-foreground hover:text-foreground transition-colors py-1"
+              >
+                <span>שיעורים שהסתיימו ({pastTeacherLessons.length + pastLessons.length})</span>
+                <ChevronDown className={cn("h-4 w-4 transition-transform", showPastLessons && "rotate-180")} />
+              </button>
+              {showPastLessons && (
+                <div className="space-y-0 opacity-60 mt-1">
+                  {pastTeacherLessons.map((item, i) => (
+                    <div
+                      key={`tl-past-${item.id}`}
+                      className={cn(
+                        (i < pastTeacherLessons.length - 1 || pastLessons.length > 0) &&
+                          "border-b border-dashed"
+                      )}
+                    >
+                      <TeacherLessonRow item={item} />
+                    </div>
+                  ))}
+                  {pastLessons.map((item, i) => (
+                    <LessonRow
+                      key={item.id}
+                      item={item}
+                      isLast={i === pastLessons.length - 1}
+                      onDelete={handleDeleteLesson}
+                      onUpdate={handleUpdateLesson}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
           )}
         </CardContent>
       </Card>
