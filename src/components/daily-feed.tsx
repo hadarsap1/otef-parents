@@ -15,6 +15,7 @@ import {
   Trash2,
   Pencil,
   Loader2 as Loader,
+  ChevronDown,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { TimePicker } from "@/components/ui/time-picker";
@@ -367,49 +368,113 @@ function LessonRow({
   );
 }
 
-function TeacherLessonRow({ item }: { item: TeacherLessonItem }) {
+/** Render text with clickable links */
+function FeedTextWithLinks({ text }: { text: string }) {
+  const urlRegex = /(https?:\/\/[^\s,]+)/g;
+  const parts = text.split(urlRegex);
   return (
-    <div className="relative flex gap-3 py-3 rounded-lg -mx-1 px-1">
-      {/* Time column */}
-      <div className="flex flex-col items-center shrink-0 w-14 text-xs">
-        <span className="font-medium">{item.startTime}</span>
-        <span className="text-muted-foreground">{item.endTime}</span>
-      </div>
-
-      {/* Content */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1.5">
-          <p className="font-medium text-sm truncate" title={item.title}>{item.title}</p>
-          <span className="text-xs text-muted-foreground bg-muted rounded px-1.5 py-0.5 shrink-0">מהמורה</span>
-        </div>
-        <p className="text-xs text-muted-foreground truncate">
-          {item.groupName}
-          {item.subGroupName && <span className="ms-1 text-primary">· {item.subGroupName}</span>}
-          {item.teacherName && <span className="ms-1">· {item.teacherName}</span>}
-        </p>
-
-        {item.zoomLink && (
-          <Button
-            size="lg"
-            render={<a href={item.zoomLink} target="_blank" rel="noopener noreferrer" />}
-            className="mt-2 w-full text-base font-medium bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+    <>
+      {parts.map((part, i) =>
+        urlRegex.test(part) ? (
+          <a
+            key={i}
+            href={part}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="text-primary hover:underline break-all inline-flex items-center gap-0.5"
           >
-            <Video className="h-5 w-5" />
-            לינק לשיעור
-          </Button>
-        )}
+            קישור
+          </a>
+        ) : (
+          <span key={i}>{part}</span>
+        )
+      )}
+    </>
+  );
+}
 
-        {item.notes && (
-          <p className="text-xs text-muted-foreground mt-0.5 truncate" title={item.notes}>
-            {item.notes}
+function TeacherLessonRow({ item }: { item: TeacherLessonItem }) {
+  const [open, setOpen] = useState(false);
+  const hasDetails = item.notes || item.zoomLink;
+
+  return (
+    <div
+      className={cn(
+        "relative py-3 rounded-lg -mx-1 px-1",
+        hasDetails && "cursor-pointer active:bg-muted/30 transition-colors"
+      )}
+      onClick={() => hasDetails && setOpen(!open)}
+      role={hasDetails ? "button" : undefined}
+      tabIndex={hasDetails ? 0 : undefined}
+      onKeyDown={hasDetails ? (e) => { if (e.key === "Enter" || e.key === " ") setOpen(!open); } : undefined}
+    >
+      <div className="flex gap-3">
+        {/* Time column */}
+        <div className="flex flex-col items-center shrink-0 w-14 text-xs">
+          <span className="font-medium">{item.startTime}</span>
+          <span className="text-muted-foreground">{item.endTime}</span>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5">
+            <p className={cn("font-medium text-sm", !open && "truncate")} title={item.title}>{item.title}</p>
+            <span className="text-xs text-muted-foreground bg-muted rounded px-1.5 py-0.5 shrink-0">מהמורה</span>
+          </div>
+          <p className="text-xs text-muted-foreground truncate">
+            {item.groupName}
+            {item.subGroupName && <span className="ms-1 text-primary">· {item.subGroupName}</span>}
+            {item.teacherName && <span className="ms-1">· {item.teacherName}</span>}
           </p>
-        )}
+
+          {!open && item.notes && (
+            <p className="text-xs text-muted-foreground mt-0.5 truncate">{item.notes}</p>
+          )}
+        </div>
+
+        {/* Actions */}
+        <div className="flex items-center gap-1 shrink-0">
+          {!open && (
+            <div onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+              <AddToCalendarButton type="teacher-lesson" id={item.id} compact />
+            </div>
+          )}
+          {hasDetails && (
+            <ChevronDown className={cn(
+              "h-4 w-4 text-muted-foreground transition-transform shrink-0",
+              open && "rotate-180"
+            )} />
+          )}
+        </div>
       </div>
 
-      {/* Calendar button */}
-      <div className="flex flex-col gap-1 shrink-0">
-        <AddToCalendarButton type="teacher-lesson" id={item.id} compact />
-      </div>
+      {/* Expanded details */}
+      {open && (
+        <div className="mt-3 ms-[68px] space-y-3">
+          {item.notes && (
+            <div className="text-sm text-foreground leading-relaxed whitespace-pre-line">
+              <FeedTextWithLinks text={item.notes} />
+            </div>
+          )}
+
+          {item.zoomLink && (
+            <Button
+              size="lg"
+              render={<a href={item.zoomLink} target="_blank" rel="noopener noreferrer" />}
+              className="w-full text-base font-medium bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+              onClick={(e: React.MouseEvent) => e.stopPropagation()}
+            >
+              <Video className="h-5 w-5" />
+              הצטרפות לזום
+            </Button>
+          )}
+
+          <div className="flex items-center gap-2" onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+            <AddToCalendarButton type="teacher-lesson" id={item.id} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

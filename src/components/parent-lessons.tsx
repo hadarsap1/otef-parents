@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Clock, ChevronDown, ChevronUp, Video, SplitSquareHorizontal, Repeat, Check, Loader2 as Loader, AlertTriangle, Sparkles } from "lucide-react";
+import { Clock, ChevronDown, ChevronUp, Video, SplitSquareHorizontal, Repeat, Check, Loader2 as Loader, AlertTriangle, Sparkles, ExternalLink } from "lucide-react";
 import {
   Card,
   CardHeader,
@@ -51,6 +51,34 @@ function formatDateHe(dateVal: string | Date) {
   const days = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"];
   const dayName = days[d.getDay()];
   return `יום ${dayName}, ${d.getDate()}/${d.getMonth() + 1}`;
+}
+
+/** Render text with clickable links */
+function TextWithLinks({ text }: { text: string }) {
+  const urlRegex = /(https?:\/\/[^\s,]+)/g;
+  const parts = text.split(urlRegex);
+
+  return (
+    <>
+      {parts.map((part, i) =>
+        urlRegex.test(part) ? (
+          <a
+            key={i}
+            href={part}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="text-primary hover:underline break-all inline-flex items-center gap-0.5"
+          >
+            <ExternalLink className="h-3 w-3 shrink-0" />
+            קישור
+          </a>
+        ) : (
+          <span key={i}>{part}</span>
+        )
+      )}
+    </>
+  );
 }
 
 function TimeslotPicker({
@@ -214,6 +242,148 @@ function TimeslotPicker({
   );
 }
 
+function LessonRow({
+  lesson,
+  displayTime,
+  subGroupName,
+  isTimeslots,
+  childIds,
+  childrenList,
+}: {
+  lesson: Lesson;
+  displayTime: { start: string; end: string };
+  subGroupName: string | null;
+  isTimeslots: boolean;
+  childIds?: string[];
+  childrenList: ChildInfo[];
+}) {
+  const [open, setOpen] = useState(false);
+  const hasDetails = lesson.notes || lesson.zoomLink;
+
+  return (
+    <div className="px-4 py-3">
+      {/* Collapsed row — always visible */}
+      <div
+        className={cn(
+          "flex items-center gap-3",
+          hasDetails && "cursor-pointer active:bg-muted/30 -mx-2 px-2 -my-1 py-1 rounded-lg transition-colors"
+        )}
+        onClick={() => hasDetails && setOpen(!open)}
+        role={hasDetails ? "button" : undefined}
+        tabIndex={hasDetails ? 0 : undefined}
+        onKeyDown={hasDetails ? (e) => { if (e.key === "Enter" || e.key === " ") setOpen(!open); } : undefined}
+      >
+        <div className="flex flex-col items-center gap-0.5 min-w-[64px]">
+          <span className="text-xs font-medium text-muted-foreground">
+            {formatDateHe(lesson.date)}
+          </span>
+          <span className="text-sm font-semibold" dir="ltr">
+            {displayTime.start}
+          </span>
+          <span className="text-xs text-muted-foreground" dir="ltr">
+            {displayTime.end}
+          </span>
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <p className={cn("font-medium text-sm", !open && "truncate")} title={lesson.title}>
+            {lesson.title}
+          </p>
+          <p className="text-xs text-muted-foreground truncate">
+            {lesson.group?.name ?? "שיעור"}
+            {lesson.isEnrichment && (
+              <span className="ms-1 inline-flex items-center gap-0.5 text-amber-600 dark:text-amber-400">
+                <Sparkles className="h-3 w-3" />
+                העשרה
+              </span>
+            )}
+            {lesson.recurrence !== "ONCE" && (
+              <span className="ms-1 inline-flex items-center gap-0.5 text-blue-600 dark:text-blue-400">
+                <Repeat className="h-3 w-3" />
+                {lesson.recurrence === "WEEKLY" ? "שבועי" : "יומי"}
+              </span>
+            )}
+            {subGroupName && (
+              <span className="ms-1 text-primary">· {subGroupName}</span>
+            )}
+            {isTimeslots && !lesson.subGroups?.some((sg) => sg.members.some((m) => childIds?.includes(m.child.id))) && (
+              <span className="ms-1 text-amber-600">· טרם נבחרה משבצת</span>
+            )}
+          </p>
+          {lesson.teacher.name && !open && (
+            <p className="text-xs text-muted-foreground truncate">{lesson.teacher.name}</p>
+          )}
+          {!open && lesson.notes && (
+            <p className="text-xs text-muted-foreground mt-0.5 truncate">{lesson.notes}</p>
+          )}
+        </div>
+
+        <div className="flex items-center gap-1 shrink-0">
+          {!open && lesson.zoomLink && (
+            <a
+              href={lesson.zoomLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="flex h-11 w-11 items-center justify-center rounded-lg hover:bg-primary/10 transition-colors"
+              title="קישור לזום"
+            >
+              <Video className="h-4 w-4 text-primary" />
+            </a>
+          )}
+          {!open && (
+            <div onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+              <AddToCalendarButton type="teacher-lesson" id={lesson.id} compact />
+            </div>
+          )}
+          {hasDetails && (
+            <ChevronDown className={cn(
+              "h-4 w-4 text-muted-foreground transition-transform",
+              open && "rotate-180"
+            )} />
+          )}
+        </div>
+      </div>
+
+      {/* Expanded details */}
+      {open && (
+        <div className="mt-3 ms-[76px] space-y-3">
+          {lesson.teacher.name && (
+            <p className="text-sm text-muted-foreground">מורה: {lesson.teacher.name}</p>
+          )}
+
+          {lesson.notes && (
+            <div className="text-sm text-foreground leading-relaxed whitespace-pre-line">
+              <TextWithLinks text={lesson.notes} />
+            </div>
+          )}
+
+          {lesson.zoomLink && (
+            <a
+              href={lesson.zoomLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 w-full rounded-xl bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 text-sm font-medium transition-colors"
+            >
+              <Video className="h-5 w-5" />
+              הצטרפות לזום
+            </a>
+          )}
+
+          <div className="flex items-center gap-2">
+            <AddToCalendarButton type="teacher-lesson" id={lesson.id} />
+          </div>
+        </div>
+      )}
+
+      {/* Timeslot picker for parents */}
+      {isTimeslots && childrenList.length > 0 && (
+        <TimeslotPicker lesson={lesson} children={childrenList} />
+      )}
+    </div>
+  );
+}
+
 export function ParentLessons({
   initialLessons,
   childIds,
@@ -296,83 +466,15 @@ export function ParentLessons({
                 }
 
                 return (
-                  <div
+                  <LessonRow
                     key={lesson.id}
-                    className="px-4 py-3"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="flex flex-col items-center gap-0.5 min-w-[64px]">
-                        <span className="text-xs font-medium text-muted-foreground">
-                          {formatDateHe(lesson.date)}
-                        </span>
-                        <span className="text-sm font-semibold" dir="ltr">
-                          {displayTime.start}
-                        </span>
-                        <span className="text-xs text-muted-foreground" dir="ltr">
-                          {displayTime.end}
-                        </span>
-                      </div>
-
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm truncate" title={lesson.title}>{lesson.title}</p>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {lesson.group?.name ?? "שיעור"}
-                          {lesson.isEnrichment && (
-                            <span className="ms-1 inline-flex items-center gap-0.5 text-amber-600 dark:text-amber-400">
-                              <Sparkles className="h-3 w-3" />
-                              העשרה
-                            </span>
-                          )}
-                          {lesson.recurrence !== "ONCE" && (
-                            <span className="ms-1 inline-flex items-center gap-0.5 text-blue-600 dark:text-blue-400">
-                              <Repeat className="h-3 w-3" />
-                              {lesson.recurrence === "WEEKLY" ? "שבועי" : "יומי"}
-                            </span>
-                          )}
-                          {subGroupName && (
-                            <span className="ms-1 text-primary">
-                              · {subGroupName}
-                            </span>
-                          )}
-                          {isTimeslots && !lesson.subGroups?.some((sg) => sg.members.some((m) => childIds?.includes(m.child.id))) && (
-                            <span className="ms-1 text-amber-600">
-                              · טרם נבחרה משבצת
-                            </span>
-                          )}
-                        </p>
-                        {lesson.teacher.name && (
-                          <p className="text-xs text-muted-foreground truncate">
-                            {lesson.teacher.name}
-                          </p>
-                        )}
-                        {lesson.notes && (
-                          <p className="text-xs text-muted-foreground mt-0.5 truncate" title={lesson.notes}>
-                            {lesson.notes}
-                          </p>
-                        )}
-                      </div>
-
-                      <div className="flex items-center gap-1.5 shrink-0">
-                        {lesson.zoomLink && (
-                          <a
-                            href={lesson.zoomLink}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex h-11 w-11 items-center justify-center rounded-lg hover:bg-primary/10 transition-colors"
-                            title="קישור לזום"
-                          >
-                            <Video className="h-4 w-4 text-primary" />
-                          </a>
-                        )}
-                        <AddToCalendarButton type="teacher-lesson" id={lesson.id} compact />
-                      </div>
-                    </div>
-
-                    {/* Timeslot picker for parents */}
-                    {isTimeslots && childrenList.length > 0 && (
-                      <TimeslotPicker lesson={lesson} children={childrenList} />
-                    )}
-                  </div>
+                    lesson={lesson}
+                    displayTime={displayTime}
+                    subGroupName={subGroupName}
+                    isTimeslots={isTimeslots}
+                    childIds={childIds}
+                    childrenList={childrenList}
+                  />
                 );
               })}
             </div>
