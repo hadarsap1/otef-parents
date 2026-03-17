@@ -218,35 +218,16 @@ function parseDocument(content: string): { date: string; lessons: ParsedLesson[]
   // Enrichment keywords — if a cell contains these, it's likely a community event
   const ENRICHMENT_KEYWORDS = ["אופציונלי", "קהילתי", "מוזמנים", "להרשמה", "כל הגילאים", "כל הקהילה", "כל הילדים"];
 
-  // Group into rows of NUM_COLUMNS
+  // Group into rows of NUM_COLUMNS — only extract from the target class column
   const lessons: ParsedLesson[] = [];
-  const enrichmentCandidates: string[] = [];
 
   for (let rowStart = 0; rowStart < dataCells.length; rowStart += NUM_COLUMNS) {
     const row = dataCells.slice(rowStart, rowStart + NUM_COLUMNS);
     if (row.length < 3) continue;
 
-    // Scan ALL cells in row for enrichment events (they can be in any column)
-    for (let colIdx = 0; colIdx < row.length; colIdx++) {
-      const cell = row[colIdx]?.trim() || "";
-      if (cell.length < 20) continue;
-
-      const isEnrichmentCell =
-        ENRICHMENT_KEYWORDS.some((kw) => cell.includes(kw)) ||
-        // Large cell that spans where most other cells are empty
-        (cell.length > 80 && row.filter((c) => c.trim().length > 15).length <= 2);
-
-      if (isEnrichmentCell) {
-        enrichmentCandidates.push(cell);
-      }
-    }
-
-    // Extract class ב cell for regular lessons
+    // Only look at the target class column
     const classCell = row[CLASS_INDEX]?.trim() || "";
     if (!classCell || classCell.length < 3) continue;
-
-    // Skip if this cell was already identified as enrichment
-    if (enrichmentCandidates.includes(classCell)) continue;
 
     const time = extractTime(classCell);
     if (!time) continue;
@@ -255,36 +236,31 @@ function parseDocument(content: string): { date: string; lessons: ParsedLesson[]
     const title = cleanTitle(classCell);
     if (!title || title.length < 2) continue;
 
-    lessons.push({
-      title,
-      startTime: time,
-      endTime: addMinutes(time, 60),
-      zoomLink: url,
-      notes: null,
-      isEnrichment: false,
-    });
-  }
+    // Check if this cell is an enrichment event
+    const isEnrichment =
+      ENRICHMENT_KEYWORDS.some((kw) => classCell.includes(kw)) ||
+      (classCell.length > 80 && row.filter((c) => c.trim().length > 15).length <= 2);
 
-  // Parse enrichment candidates
-  for (const block of enrichmentCandidates) {
-    const time = extractTime(block);
-    if (!time) continue;
-
-    const url = extractUrl(block);
-    const title = cleanTitle(block);
-    if (!title || title.length < 3) continue;
-
-    // Truncate very long titles
-    const shortTitle = title.length > 100 ? title.slice(0, 97) + "..." : title;
-
-    lessons.push({
-      title: shortTitle,
-      startTime: time,
-      endTime: addMinutes(time, 60),
-      zoomLink: url?.includes("zoom") || url?.includes("meet") ? url : null,
-      notes: url && !(url.includes("zoom") || url.includes("meet")) ? `להרשמה: ${url}` : null,
-      isEnrichment: true,
-    });
+    if (isEnrichment) {
+      const shortTitle = title.length > 100 ? title.slice(0, 97) + "..." : title;
+      lessons.push({
+        title: shortTitle,
+        startTime: time,
+        endTime: addMinutes(time, 60),
+        zoomLink: url?.includes("zoom") || url?.includes("meet") ? url : null,
+        notes: url && !(url.includes("zoom") || url.includes("meet")) ? `להרשמה: ${url}` : null,
+        isEnrichment: true,
+      });
+    } else {
+      lessons.push({
+        title,
+        startTime: time,
+        endTime: addMinutes(time, 60),
+        zoomLink: url,
+        notes: null,
+        isEnrichment: false,
+      });
+    }
   }
 
   // Deduplicate by title+time
