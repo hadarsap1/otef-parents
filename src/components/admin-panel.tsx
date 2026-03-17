@@ -1138,7 +1138,7 @@ export function AdminPanel() {
                   </div>
                   </div>
 
-                  <div className="flex items-center gap-1.5 flex-wrap ms-12">
+                  <div className="flex items-center gap-1.5 flex-wrap ms-12 sm:ms-0">
                     {(user._count.children + user._count.childParents) > 0 && (
                       <Button
                         variant="outline"

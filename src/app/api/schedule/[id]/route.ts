@@ -102,16 +102,18 @@ export async function DELETE(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  // Delete Google Calendar event for this user
-  const sync = await prisma.calendarSync.findUnique({
-    where: { userId_entityType_entityId: { userId: session.user.id, entityType: "lesson", entityId: id } },
+  // Delete Google Calendar events for all users who synced this schedule item
+  const calendarSyncs = await prisma.calendarSync.findMany({
+    where: { entityType: "lesson", entityId: id },
   });
-  if (sync) {
-    await deleteFromGoogleCalendar(session.user.id, sync.googleEventId);
-    await prisma.calendarSync.delete({ where: { id: sync.id } });
-  }
+  await Promise.allSettled(
+    calendarSyncs.map((sync) => deleteFromGoogleCalendar(sync.userId, sync.googleEventId))
+  );
 
-  await prisma.scheduleItem.delete({ where: { id } });
+  await prisma.$transaction([
+    prisma.calendarSync.deleteMany({ where: { entityType: "lesson", entityId: id } }),
+    prisma.scheduleItem.delete({ where: { id } }),
+  ]);
 
   return NextResponse.json({ ok: true });
 }

@@ -489,16 +489,16 @@ export function ParentLessons({
       {pastLessons.length > 0 && (
         <div>
           <Button
-            variant="ghost"
-            className="w-full justify-between text-muted-foreground hover:text-foreground"
+            variant="outline"
+            className="w-full justify-between text-muted-foreground hover:text-foreground border-border/40"
             onClick={() => setShowPast(!showPast)}
           >
             <span className="text-sm">שיעורים שעברו ({pastLessons.length})</span>
             <ChevronDown className={cn("h-4 w-4 transition-transform", showPast && "rotate-180")} />
           </Button>
           {showPast && (
-            <Card className="shadow-sm border-border/60 overflow-hidden opacity-50 mt-2">
-              <CardContent className="p-0">
+            <Card className="shadow-sm border-border/60 overflow-hidden mt-2">
+              <CardContent className="p-0 opacity-60">
                 <div className="divide-y divide-border/50">
                   {pastLessons.map((lesson) => (
                     <LessonRow

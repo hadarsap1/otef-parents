@@ -113,14 +113,15 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
   const calendarSyncs = await prisma.calendarSync.findMany({
     where: { entityType: "teacher-lesson", entityId: id },
   });
-  for (const sync of calendarSyncs) {
-    await deleteFromGoogleCalendar(sync.userId, sync.googleEventId);
-  }
-  await prisma.calendarSync.deleteMany({
-    where: { entityType: "teacher-lesson", entityId: id },
-  });
+  await Promise.allSettled(
+    calendarSyncs.map((sync) => deleteFromGoogleCalendar(sync.userId, sync.googleEventId))
+  );
 
-  await prisma.lesson.delete({ where: { id } });
+  // Transactional DB cleanup
+  await prisma.$transaction([
+    prisma.calendarSync.deleteMany({ where: { entityType: "teacher-lesson", entityId: id } }),
+    prisma.lesson.delete({ where: { id } }),
+  ]);
 
   return NextResponse.json({ ok: true });
 }

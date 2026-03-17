@@ -33,8 +33,8 @@ export default async function LessonsPage() {
     ...new Set(children.flatMap((c) => c.groupMemberships.map((m) => m.groupId))),
   ];
 
-  const now = new Date();
-  now.setHours(0, 0, 0, 0);
+  // Use Israel date to avoid DST edge cases on UTC servers
+  const now = new Date(new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Jerusalem" }));
 
   const lessonInclude = {
     teacher: { select: { name: true } },

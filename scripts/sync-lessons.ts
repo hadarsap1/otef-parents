@@ -129,13 +129,18 @@ function findDayDate(dayName: string): string {
   const today = new Date();
   const todayDow = today.getDay();
   if (todayDow === targetDow) return today.toISOString().split("T")[0];
-  // Find next occurrence
-  for (let offset = 1; offset <= 7; offset++) {
+  // Find nearest occurrence (prefer past over future for lesson docs)
+  let best = "";
+  let bestDist = 999;
+  for (let offset = -6; offset <= 7; offset++) {
     const d = new Date(today);
     d.setDate(d.getDate() + offset);
-    if (d.getDay() === targetDow) return d.toISOString().split("T")[0];
+    if (d.getDay() === targetDow && Math.abs(offset) < bestDist) {
+      best = d.toISOString().split("T")[0];
+      bestDist = Math.abs(offset);
+    }
   }
-  return today.toISOString().split("T")[0];
+  return best || today.toISOString().split("T")[0];
 }
 
 // ── Parser ─────────────────────────────────────────────────────

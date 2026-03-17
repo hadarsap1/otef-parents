@@ -28,17 +28,22 @@ export async function getGoogleAuth(userId: string) {
   // If token is expired, refresh and persist
   const now = Date.now();
   if (account.expires_at && account.expires_at * 1000 < now) {
-    const { credentials } = await oauth2.refreshAccessToken();
-    await prisma.account.update({
-      where: { id: account.id },
-      data: {
-        access_token: credentials.access_token,
-        expires_at: credentials.expiry_date
-          ? Math.floor(credentials.expiry_date / 1000)
-          : null,
-      },
-    });
-    oauth2.setCredentials(credentials);
+    try {
+      const { credentials } = await oauth2.refreshAccessToken();
+      await prisma.account.update({
+        where: { id: account.id },
+        data: {
+          access_token: credentials.access_token,
+          expires_at: credentials.expiry_date
+            ? Math.floor(credentials.expiry_date / 1000)
+            : null,
+        },
+      });
+      oauth2.setCredentials(credentials);
+    } catch {
+      // Refresh token revoked or expired — user needs to re-login
+      return null;
+    }
   }
 
   return oauth2;

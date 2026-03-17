@@ -64,8 +64,8 @@ export default async function TeacherDashboardPage() {
     }))
   );
 
-  const now = new Date();
-  now.setHours(0, 0, 0, 0);
+  // Use Israel date to avoid DST edge cases on UTC servers
+  const now = new Date(new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Jerusalem" }));
 
   const lessonInclude = {
     group: {

@@ -380,7 +380,7 @@ export function TeacherLessons({
                 יצירת שיעור לתאריך מסוים. כל הילדים בכיתה יראו אותו.
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-3 max-h-[calc(100dvh-180px)] overflow-y-auto -mx-1 px-1">
+            <div className="space-y-3 max-h-[calc(100svh-180px)] overflow-y-auto -mx-1 px-1">
               <div className="space-y-1.5">
                 <Label htmlFor="lesson-title">שם השיעור</Label>
                 <Input
@@ -452,7 +452,7 @@ export function TeacherLessons({
                             );
                           }}
                           className={cn(
-                            "text-sm px-3 py-1.5 rounded-xl border transition-colors min-h-[36px] flex items-center gap-1.5",
+                            "text-sm px-3 py-1.5 rounded-xl border transition-colors min-h-[44px] flex items-center gap-1.5",
                             selected
                               ? "bg-primary text-primary-foreground border-primary"
                               : "border-border hover:border-primary/50"
@@ -780,7 +780,7 @@ export function TeacherLessons({
                                     aria-label={`${child.name}${isInOtherGroup ? " (משובץ בקבוצה אחרת)" : ""}`}
                                     onClick={() => toggleChildInSubGroup(idx, child.id)}
                                     className={cn(
-                                      "text-sm px-3 py-1.5 rounded-lg border transition-colors min-h-[36px]",
+                                      "text-sm px-3 py-1.5 rounded-lg border transition-colors min-h-[44px]",
                                       isInThisGroup
                                         ? "bg-primary text-primary-foreground border-primary"
                                         : isInOtherGroup
@@ -940,19 +940,19 @@ export function TeacherLessons({
       {pastLessons.length > 0 && (
         <div className="mt-4">
           <Button
-            variant="ghost"
-            className="w-full justify-between text-muted-foreground hover:text-foreground"
+            variant="outline"
+            className="w-full justify-between text-muted-foreground hover:text-foreground border-border/40"
             onClick={() => setShowPast(!showPast)}
           >
             <span className="text-sm">שיעורים שעברו ({pastLessons.length})</span>
             <ChevronDown className={cn("h-4 w-4 transition-transform", showPast && "rotate-180")} />
           </Button>
           {showPast && (
-            <div className="space-y-2 mt-2">
+            <div className="space-y-2 mt-2 opacity-60">
               {pastLessons.map((lesson) => (
                 <Card
                   key={lesson.id}
-                  className="shadow-sm border-border/60 overflow-hidden opacity-50"
+                  className="shadow-sm border-border/60 overflow-hidden"
                 >
                   <div className="flex items-center gap-3 px-4 py-3">
                     <div className="flex flex-col items-center gap-0.5 min-w-[64px]">
