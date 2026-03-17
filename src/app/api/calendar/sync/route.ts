@@ -193,22 +193,24 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Persist googleEventId back to the source record
+  // Persist per-user calendar sync record
   try {
-    switch (type) {
-      case "personal":
-        await prisma.personalEvent.update({ where: { id }, data: { googleEventId } });
-        break;
-      case "lesson":
-        await prisma.scheduleItem.update({ where: { id }, data: { googleEventId } });
-        break;
-      case "teacher-lesson":
-        await prisma.lesson.update({ where: { id }, data: { googleEventId } });
-        break;
-      case "playdate":
-        await prisma.playdate.update({ where: { id }, data: { googleEventId } });
-        break;
-    }
+    await prisma.calendarSync.upsert({
+      where: {
+        userId_entityType_entityId: {
+          userId: session.user.id,
+          entityType: type,
+          entityId: id,
+        },
+      },
+      update: { googleEventId },
+      create: {
+        userId: session.user.id,
+        googleEventId,
+        entityType: type,
+        entityId: id,
+      },
+    });
   } catch {
     return NextResponse.json({ error: "Failed to save calendar event reference" }, { status: 500 });
   }

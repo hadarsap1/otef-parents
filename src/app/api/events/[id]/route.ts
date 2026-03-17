@@ -65,8 +65,13 @@ export async function DELETE(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  if (event.googleEventId) {
-    await deleteFromGoogleCalendar(session.user.id, event.googleEventId);
+  // Delete Google Calendar event for this user
+  const sync = await prisma.calendarSync.findUnique({
+    where: { userId_entityType_entityId: { userId: session.user.id, entityType: "personal", entityId: id } },
+  });
+  if (sync) {
+    await deleteFromGoogleCalendar(session.user.id, sync.googleEventId);
+    await prisma.calendarSync.delete({ where: { id: sync.id } });
   }
 
   await prisma.personalEvent.delete({ where: { id } });

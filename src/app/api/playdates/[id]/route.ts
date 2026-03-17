@@ -22,9 +22,16 @@ export async function DELETE(
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  if (playdate.googleEventId) {
-    await deleteFromGoogleCalendar(session.user.id, playdate.googleEventId);
+  // Delete Google Calendar events for all users who synced this playdate
+  const calendarSyncs = await prisma.calendarSync.findMany({
+    where: { entityType: "playdate", entityId: id },
+  });
+  for (const sync of calendarSyncs) {
+    await deleteFromGoogleCalendar(sync.userId, sync.googleEventId);
   }
+  await prisma.calendarSync.deleteMany({
+    where: { entityType: "playdate", entityId: id },
+  });
 
   await prisma.playdate.update({
     where: { id },

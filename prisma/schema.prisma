@@ -71,6 +71,7 @@ model User {
   lessons               Lesson[]
   personalEvents        PersonalEvent[]
   schoolMemberships     SchoolMember[]
+  calendarSyncs         CalendarSync[]
 }
 
 enum Role {
@@ -322,4 +323,18 @@ model LessonGroupMember {
   child       Child       @relation(fields: [childId], references: [id], onDelete: Cascade)
 
   @@unique([lessonGroupId, childId])
+}
+
+// ── Calendar sync (tracks per-user Google Calendar events) ────────
+model CalendarSync {
+  id              String   @id @default(cuid())
+  userId          String
+  googleEventId   String
+  entityType      String   // "lesson" | "teacher-lesson" | "personal" | "playdate"
+  entityId        String
+  createdAt       DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, entityType, entityId])
 }
