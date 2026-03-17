@@ -73,10 +73,22 @@ function formatDateHe(dateVal: string | Date) {
   return `יום ${dayName}, ${d.getDate()}/${d.getMonth() + 1}`;
 }
 
-function isPast(dateVal: string | Date) {
-  const d = new Date(dateVal);
-  d.setHours(23, 59, 59, 999);
-  return d < new Date();
+function getIsraelNow() {
+  const israelNow = new Date().toLocaleString("en-CA", { timeZone: "Asia/Jerusalem", hour12: false });
+  return {
+    date: israelNow.split(",")[0],
+    time: israelNow.split(",")[1]?.trim().slice(0, 5) ?? "00:00",
+  };
+}
+
+function isPast(dateVal: string | Date, endTime?: string) {
+  const { date: israelDate, time: israelTime } = getIsraelNow();
+  const lessonDate = new Date(dateVal).toISOString().split("T")[0];
+  if (lessonDate < israelDate) return true;
+  if (lessonDate === israelDate) {
+    return endTime ? endTime <= israelTime : true;
+  }
+  return false;
 }
 
 const RECURRENCE_OPTIONS = [
@@ -856,7 +868,7 @@ export function TeacherLessons({
               key={lesson.id}
               className={cn(
                 "shadow-sm border-border/60 overflow-hidden",
-                isPast(lesson.date) && lesson.recurrence === "ONCE" && "opacity-50"
+                isPast(lesson.date, lesson.endTime) && lesson.recurrence === "ONCE" && "opacity-50"
               )}
             >
               <div className="flex items-center gap-3 px-4 py-3">

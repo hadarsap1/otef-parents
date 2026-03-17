@@ -33,8 +33,10 @@ export default async function LessonsPage() {
     ...new Set(children.flatMap((c) => c.groupMemberships.map((m) => m.groupId))),
   ];
 
-  // Use Israel date to avoid DST edge cases on UTC servers
-  const now = new Date(new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Jerusalem" }));
+  // Israel current time for past/upcoming split
+  const israelNow = new Date().toLocaleString("en-CA", { timeZone: "Asia/Jerusalem", hour12: false });
+  const israelDate = israelNow.split(",")[0]; // "YYYY-MM-DD"
+  const israelTime = israelNow.split(",")[1]?.trim().slice(0, 5) ?? "00:00"; // "HH:mm"
 
   const lessonInclude = {
     teacher: { select: { name: true } },
@@ -46,32 +48,24 @@ export default async function LessonsPage() {
     },
   } as const;
 
-  // Fetch teacher-created group lessons (upcoming only)
-  const lessons = await prisma.lesson.findMany({
-    where: {
-      groupId: { in: groupIds },
-      OR: [
-        { recurrence: "ONCE", date: { gte: now } },
-        { recurrence: { not: "ONCE" } },
-      ],
-    },
+  // Fetch all ONCE lessons + recurring, split by time in JS
+  const allLessons = await prisma.lesson.findMany({
+    where: { groupId: { in: groupIds } },
     include: lessonInclude,
     orderBy: [{ date: "asc" }, { startTime: "asc" }],
   });
 
-  // Past lessons
-  const pastLessons = await prisma.lesson.findMany({
-    where: {
-      groupId: { in: groupIds },
-      recurrence: "ONCE",
-      date: { lt: now },
-    },
-    include: lessonInclude,
-    orderBy: [{ date: "desc" }, { startTime: "desc" }],
-    take: 50,
-  });
+  function isLessonPast(lesson: { date: Date; endTime: string; recurrence: string }) {
+    if (lesson.recurrence !== "ONCE") return false;
+    const lessonDate = lesson.date.toISOString().split("T")[0];
+    if (lessonDate < israelDate) return true;
+    if (lessonDate === israelDate) {
+      return lesson.endTime ? lesson.endTime <= israelTime : true;
+    }
+    return false;
+  }
 
-  function filterSubGroups(lessonList: typeof lessons) {
+  function filterSubGroups(lessonList: typeof allLessons) {
     return lessonList.filter((lesson) => {
       if (!lesson.hasSubGroups) return true;
       if (lesson.subGroupMode === "TIMESLOTS") return true;
@@ -81,14 +75,18 @@ export default async function LessonsPage() {
     });
   }
 
-  const filtered = filterSubGroups(lessons);
-  const filteredPast = filterSubGroups(pastLessons);
+  const validLessons = filterSubGroups(allLessons);
+  const filtered = validLessons.filter((l) => !isLessonPast(l));
+  const filteredPast = validLessons
+    .filter((l) => isLessonPast(l))
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime() || b.endTime.localeCompare(a.endTime))
+    .slice(0, 50);
 
   // Fetch parent-added personal lessons (ScheduleItems)
   const scheduleItems = await prisma.scheduleItem.findMany({
     where: {
       childId: { in: childIds },
-      endTime: { gte: now },
+      endTime: { gte: new Date() },
     },
     include: { child: { select: { id: true, name: true } } },
     orderBy: { startTime: "asc" },
