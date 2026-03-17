@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Clock, Trash2, Video, Pencil, Users, Copy, SplitSquareHorizontal, Repeat, CalendarDays, AlertTriangle, Loader2 as Loader, Sparkles, Check } from "lucide-react";
+import { Plus, Clock, Trash2, Video, Pencil, Users, Copy, SplitSquareHorizontal, Repeat, CalendarDays, AlertTriangle, Loader2 as Loader, Sparkles, Check, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -87,10 +87,12 @@ const RECURRENCE_OPTIONS = [
 
 export function TeacherLessons({
   initialLessons,
+  pastLessons = [],
   groups,
   schools = [],
 }: {
   initialLessons: Lesson[];
+  pastLessons?: Lesson[];
   groups: Group[];
   schools?: SchoolOption[];
 }) {
@@ -197,6 +199,7 @@ export function TeacherLessons({
   }
 
   const [slotError, setSlotError] = useState<string | null>(null);
+  const [showPast, setShowPast] = useState(false);
 
   function generateTimeslots() {
     const intervalMin = Number(slotInterval) || 30;
@@ -933,6 +936,65 @@ export function TeacherLessons({
         </div>
       )}
 
+      {/* Past lessons section */}
+      {pastLessons.length > 0 && (
+        <div className="mt-4">
+          <Button
+            variant="ghost"
+            className="w-full justify-between text-muted-foreground hover:text-foreground"
+            onClick={() => setShowPast(!showPast)}
+          >
+            <span className="text-sm">שיעורים שעברו ({pastLessons.length})</span>
+            <ChevronDown className={cn("h-4 w-4 transition-transform", showPast && "rotate-180")} />
+          </Button>
+          {showPast && (
+            <div className="space-y-2 mt-2">
+              {pastLessons.map((lesson) => (
+                <Card
+                  key={lesson.id}
+                  className="shadow-sm border-border/60 overflow-hidden opacity-50"
+                >
+                  <div className="flex items-center gap-3 px-4 py-3">
+                    <div className="flex flex-col items-center gap-0.5 min-w-[64px]">
+                      <span className="text-xs font-medium text-muted-foreground">
+                        {formatDateHe(lesson.date)}
+                      </span>
+                      <span className="text-sm font-semibold">
+                        {lesson.startTime}
+                      </span>
+                      <span className="text-xs text-muted-foreground">
+                        {lesson.endTime}
+                      </span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm truncate" title={lesson.title}>{lesson.title}</p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {lesson.group?.name ?? "ללא כיתה"}
+                        {lesson.isEnrichment && (
+                          <span className="ms-1.5 inline-flex items-center gap-0.5 text-amber-600 dark:text-amber-400">
+                            <Sparkles className="h-3 w-3" />
+                            העשרה
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      className="rounded-lg hover:bg-destructive/10 h-9 w-9"
+                      onClick={() => setDeleteConfirmId(lesson.id)}
+                      aria-label={`מחיקת שיעור ${lesson.title}`}
+                    >
+                      <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                    </Button>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Delete confirmation dialog */}
       <Dialog
         open={!!deleteConfirmId}
@@ -943,7 +1005,7 @@ export function TeacherLessons({
             <DialogTitle>מחיקת שיעור</DialogTitle>
             <DialogDescription>
               {(() => {
-                const lesson = sorted.find((l) => l.id === deleteConfirmId);
+                const lesson = sorted.find((l) => l.id === deleteConfirmId) ?? pastLessons.find((l) => l.id === deleteConfirmId);
                 if (!lesson) return "האם למחוק את השיעור? לא ניתן לבטל פעולה זו.";
                 return `האם למחוק את "${lesson.title}" (${formatDateHe(lesson.date)})${lesson.hasSubGroups ? ` עם ${lesson.subGroups?.length ?? 0} ${lesson.subGroupMode === "TIMESLOTS" ? "משבצות" : "קבוצות"}` : ""}? לא ניתן לבטל פעולה זו.`;
               })()}

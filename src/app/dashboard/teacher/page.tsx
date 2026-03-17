@@ -64,24 +64,50 @@ export default async function TeacherDashboardPage() {
     }))
   );
 
-  const lessons = await prisma.lesson.findMany({
-    where: isSuperAdmin ? {} : { teacherId: session.user.id },
-    include: {
-      group: {
-        select: {
-          id: true,
-          name: true,
-          school: { select: { name: true } },
-          members: { select: { child: { select: { id: true, name: true } } } },
-        },
-      },
-      subGroups: {
-        include: {
-          members: { include: { child: { select: { id: true, name: true } } } },
-        },
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+
+  const lessonInclude = {
+    group: {
+      select: {
+        id: true,
+        name: true,
+        school: { select: { name: true } },
+        members: { select: { child: { select: { id: true, name: true } } } },
       },
     },
+    subGroups: {
+      include: {
+        members: { include: { child: { select: { id: true, name: true } } } },
+      },
+    },
+  } as const;
+
+  const teacherFilter = isSuperAdmin ? {} : { teacherId: session.user.id };
+
+  // Upcoming: one-time future + all recurring
+  const lessons = await prisma.lesson.findMany({
+    where: {
+      ...teacherFilter,
+      OR: [
+        { recurrence: "ONCE", date: { gte: now } },
+        { recurrence: { not: "ONCE" } },
+      ],
+    },
+    include: lessonInclude,
     orderBy: [{ date: "asc" }, { startTime: "asc" }],
+  });
+
+  // Past: one-time lessons before today
+  const pastLessons = await prisma.lesson.findMany({
+    where: {
+      ...teacherFilter,
+      recurrence: "ONCE",
+      date: { lt: now },
+    },
+    include: lessonInclude,
+    orderBy: [{ date: "desc" }, { startTime: "desc" }],
+    take: 50,
   });
 
   return (
@@ -90,6 +116,7 @@ export default async function TeacherDashboardPage() {
 
       <TeacherLessons
         initialLessons={lessons}
+        pastLessons={pastLessons}
         groups={allGroups}
         schools={schools.map((s) => ({ id: s.id, name: s.name }))}
       />

@@ -36,8 +36,17 @@ export default async function LessonsPage() {
   const now = new Date();
   now.setHours(0, 0, 0, 0);
 
+  const lessonInclude = {
+    teacher: { select: { name: true } },
+    group: { select: { id: true, name: true } },
+    subGroups: {
+      include: {
+        members: { include: { child: { select: { id: true, name: true } } } },
+      },
+    },
+  } as const;
+
   // Fetch teacher-created group lessons (upcoming only)
-  // Fetch one-time future lessons + all recurring lessons
   const lessons = await prisma.lesson.findMany({
     where: {
       groupId: { in: groupIds },
@@ -46,26 +55,34 @@ export default async function LessonsPage() {
         { recurrence: { not: "ONCE" } },
       ],
     },
-    include: {
-      teacher: { select: { name: true } },
-      group: { select: { id: true, name: true } },
-      subGroups: {
-        include: {
-          members: { include: { child: { select: { id: true, name: true } } } },
-        },
-      },
-    },
+    include: lessonInclude,
     orderBy: [{ date: "asc" }, { startTime: "asc" }],
   });
 
-  // Filter: TIMESLOTS always visible (parents self-select), MANUAL only if child is assigned
-  const filtered = lessons.filter((lesson) => {
-    if (!lesson.hasSubGroups) return true;
-    if (lesson.subGroupMode === "TIMESLOTS") return true;
-    return lesson.subGroups.some((sg) =>
-      sg.members.some((m) => childIds.includes(m.childId))
-    );
+  // Past lessons
+  const pastLessons = await prisma.lesson.findMany({
+    where: {
+      groupId: { in: groupIds },
+      recurrence: "ONCE",
+      date: { lt: now },
+    },
+    include: lessonInclude,
+    orderBy: [{ date: "desc" }, { startTime: "desc" }],
+    take: 50,
   });
+
+  function filterSubGroups(lessonList: typeof lessons) {
+    return lessonList.filter((lesson) => {
+      if (!lesson.hasSubGroups) return true;
+      if (lesson.subGroupMode === "TIMESLOTS") return true;
+      return lesson.subGroups.some((sg) =>
+        sg.members.some((m) => childIds.includes(m.childId))
+      );
+    });
+  }
+
+  const filtered = filterSubGroups(lessons);
+  const filteredPast = filterSubGroups(pastLessons);
 
   // Fetch parent-added personal lessons (ScheduleItems)
   const scheduleItems = await prisma.scheduleItem.findMany({
@@ -82,6 +99,7 @@ export default async function LessonsPage() {
       <LessonsPageHeader />
       <ParentLessons
         initialLessons={filtered}
+        pastLessons={filteredPast}
         childIds={childIds}
         children={children.map((c) => ({ id: c.id, name: c.name }))}
       />

@@ -386,14 +386,17 @@ function LessonRow({
 
 export function ParentLessons({
   initialLessons,
+  pastLessons = [],
   childIds,
   children,
 }: {
   initialLessons: Lesson[];
+  pastLessons?: Lesson[];
   childIds?: string[];
   children?: ChildInfo[];
 }) {
   const [expanded, setExpanded] = useState(true);
+  const [showPast, setShowPast] = useState(false);
 
   if (initialLessons.length === 0) {
     return (
@@ -481,6 +484,39 @@ export function ParentLessons({
           </CardContent>
         )}
       </Card>
+
+      {/* Past lessons */}
+      {pastLessons.length > 0 && (
+        <div>
+          <Button
+            variant="ghost"
+            className="w-full justify-between text-muted-foreground hover:text-foreground"
+            onClick={() => setShowPast(!showPast)}
+          >
+            <span className="text-sm">שיעורים שעברו ({pastLessons.length})</span>
+            <ChevronDown className={cn("h-4 w-4 transition-transform", showPast && "rotate-180")} />
+          </Button>
+          {showPast && (
+            <Card className="shadow-sm border-border/60 overflow-hidden opacity-50 mt-2">
+              <CardContent className="p-0">
+                <div className="divide-y divide-border/50">
+                  {pastLessons.map((lesson) => (
+                    <LessonRow
+                      key={lesson.id}
+                      lesson={lesson}
+                      displayTime={{ start: lesson.startTime, end: lesson.endTime }}
+                      subGroupName={null}
+                      isTimeslots={false}
+                      childIds={childIds}
+                      childrenList={childrenList}
+                    />
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
     </div>
   );
 }
