@@ -258,7 +258,7 @@ function parseDocument(content: string): { date: string; lessons: ParsedLesson[]
     lessons.push({
       title,
       startTime: time,
-      endTime: addMinutes(time, 30),
+      endTime: addMinutes(time, 60),
       zoomLink: url,
       notes: null,
       isEnrichment: false,

@@ -1068,8 +1068,9 @@ export function AdminPanel() {
               {filteredUsers.map((user) => (
                 <div
                   key={user.id}
-                  className="flex items-center gap-3 py-2 border-b border-dashed last:border-0"
+                  className="flex flex-col gap-2 py-2 border-b border-dashed last:border-0"
                 >
+                  <div className="flex items-center gap-3">
                   <Avatar className="h-9 w-9 shrink-0">
                     <AvatarImage src={user.image ?? ""} alt={user.name ?? ""} />
                     <AvatarFallback className="bg-primary/10 text-primary text-xs">
@@ -1083,10 +1084,10 @@ export function AdminPanel() {
                   </Avatar>
 
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm truncate">
+                    <p className="font-medium text-sm break-words">
                       {user.name ?? "-"}
                     </p>
-                    <p className="text-xs text-muted-foreground truncate">
+                    <p className="text-xs text-muted-foreground break-all">
                       {user.email}
                     </p>
                     <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground flex-wrap">
@@ -1135,8 +1136,9 @@ export function AdminPanel() {
                       })()}
                     </div>
                   </div>
+                  </div>
 
-                  <div className="flex items-center gap-1.5 shrink-0">
+                  <div className="flex items-center gap-1.5 flex-wrap ms-12">
                     {(user._count.children + user._count.childParents) > 0 && (
                       <Button
                         variant="outline"
