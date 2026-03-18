@@ -43,7 +43,39 @@ export const authOptions: NextAuthOptions = {
   session: {
     strategy: "database",
   },
+  events: {
+    // Update tokens when user re-authenticates (fixes expired refresh tokens)
+    async linkAccount({ account }) {
+      // linkAccount fires on first-time linking; tokens are fresh
+    },
+  },
   callbacks: {
+    async signIn({ user, account }) {
+      // When re-signing in with Google, update stored tokens
+      if (account?.provider === "google" && user.id) {
+        try {
+          const existing = await prisma.account.findFirst({
+            where: { userId: user.id, provider: "google" },
+          });
+          if (existing && account.access_token) {
+            await prisma.account.update({
+              where: { id: existing.id },
+              data: {
+                access_token: account.access_token,
+                refresh_token: account.refresh_token ?? existing.refresh_token,
+                expires_at: account.expires_at ?? existing.expires_at,
+                id_token: account.id_token ?? existing.id_token,
+                scope: account.scope ?? existing.scope,
+                token_type: account.token_type ?? existing.token_type,
+              },
+            });
+          }
+        } catch (err) {
+          console.error("[auth] Failed to update tokens on sign-in:", err);
+        }
+      }
+      return true;
+    },
     async session({ session, user }) {
       if (session.user) {
         session.user.id = user.id;
