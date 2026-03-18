@@ -3,14 +3,16 @@ import { prisma } from "@/lib/prisma";
 
 /**
  * Get an authenticated Google OAuth2 client for a user.
- * Refreshes the access token if expired.
+ * Proactively refreshes the access token if expired or about to expire.
+ * Persists new tokens to the database so subsequent requests reuse them.
  */
 export async function getGoogleAuth(userId: string) {
   const account = await prisma.account.findFirst({
     where: { userId, provider: "google" },
   });
 
-  if (!account?.access_token || !account.refresh_token) {
+  if (!account?.refresh_token) {
+    console.error("[google-calendar] No refresh_token for user:", userId);
     return null;
   }
 
@@ -20,14 +22,17 @@ export async function getGoogleAuth(userId: string) {
   );
 
   oauth2.setCredentials({
-    access_token: account.access_token,
+    access_token: account.access_token ?? undefined,
     refresh_token: account.refresh_token,
     expiry_date: account.expires_at ? account.expires_at * 1000 : undefined,
   });
 
-  // If token is expired, refresh and persist
+  // Proactively refresh if expired or expiring within 5 minutes (or no expiry stored)
   const now = Date.now();
-  if (account.expires_at && account.expires_at * 1000 < now) {
+  const expiresAt = account.expires_at ? account.expires_at * 1000 : 0;
+  const needsRefresh = !account.access_token || expiresAt === 0 || expiresAt < now + 5 * 60 * 1000;
+
+  if (needsRefresh) {
     try {
       const { credentials } = await oauth2.refreshAccessToken();
       await prisma.account.update({
@@ -41,11 +46,28 @@ export async function getGoogleAuth(userId: string) {
       });
       oauth2.setCredentials(credentials);
     } catch (err) {
-      // Refresh token revoked or expired — user needs to re-login
-      console.error("[google-calendar] Token refresh failed:", err instanceof Error ? err.message : err);
+      console.error("[google-calendar] Token refresh failed for user:", userId,
+        err instanceof Error ? err.message : err);
       return null;
     }
   }
+
+  // Persist refreshed tokens whenever the library auto-refreshes
+  oauth2.on("tokens", async (tokens) => {
+    try {
+      await prisma.account.update({
+        where: { id: account.id },
+        data: {
+          access_token: tokens.access_token ?? undefined,
+          expires_at: tokens.expiry_date
+            ? Math.floor(tokens.expiry_date / 1000)
+            : undefined,
+        },
+      });
+    } catch {
+      // Non-fatal — next request will re-refresh
+    }
+  });
 
   return oauth2;
 }

@@ -205,9 +205,14 @@ export async function POST(req: NextRequest) {
   try {
     googleEventId = await addToGoogleCalendar(session.user.id, calendarEvent);
   } catch (err) {
-    console.error("[calendar/sync] addToGoogleCalendar threw:", err instanceof Error ? err.message : err);
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("[calendar/sync] addToGoogleCalendar threw for user:", session.user.id, msg);
+    // Distinguish auth errors from API errors for the client
+    const isAuthError = msg.includes("invalid_grant") || msg.includes("Invalid Credentials") || msg.includes("Token has been");
     return NextResponse.json(
-      { error: "Failed to add to Google Calendar" },
+      { error: isAuthError
+        ? "Failed to add to Google Calendar. Please re-login to grant calendar permission."
+        : "שגיאה בהוספה ליומן Google. נסו שוב." },
       { status: 500 }
     );
   }

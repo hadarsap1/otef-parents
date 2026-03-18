@@ -43,26 +43,21 @@ export const authOptions: NextAuthOptions = {
   session: {
     strategy: "database",
   },
-  events: {
-    // Update tokens when user re-authenticates (fixes expired refresh tokens)
-    async linkAccount({ account }) {
-      // linkAccount fires on first-time linking; tokens are fresh
-    },
-  },
   callbacks: {
     async signIn({ user, account }) {
-      // When re-signing in with Google, update stored tokens
-      if (account?.provider === "google" && user.id) {
+      // On re-sign-in with Google, update stored tokens so refresh_token stays fresh
+      if (account?.provider === "google" && account.access_token && user.id) {
         try {
           const existing = await prisma.account.findFirst({
             where: { userId: user.id, provider: "google" },
           });
-          if (existing && account.access_token) {
+          if (existing) {
             await prisma.account.update({
               where: { id: existing.id },
               data: {
                 access_token: account.access_token,
-                refresh_token: account.refresh_token ?? existing.refresh_token,
+                // Google only sends refresh_token on consent; keep existing if not provided
+                refresh_token: account.refresh_token || existing.refresh_token,
                 expires_at: account.expires_at ?? existing.expires_at,
                 id_token: account.id_token ?? existing.id_token,
                 scope: account.scope ?? existing.scope,
@@ -71,7 +66,8 @@ export const authOptions: NextAuthOptions = {
             });
           }
         } catch (err) {
-          console.error("[auth] Failed to update tokens on sign-in:", err);
+          // Non-blocking — sign-in still succeeds, calendar may fail until next login
+          console.error("[auth] Failed to update tokens on sign-in:", err instanceof Error ? err.message : err);
         }
       }
       return true;
