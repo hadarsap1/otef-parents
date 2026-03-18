@@ -91,6 +91,7 @@ model School {
   createdAt   DateTime       @default(now())
   members     SchoolMember[]
   groups      Group[]
+  lessons     Lesson[]       // school-wide lessons
 }
 
 enum SchoolRole {
@@ -294,11 +295,13 @@ model Lesson {
   isEnrichment  Boolean   @default(false) // העשרה — optional/not mandatory
   teacherId     String
   groupId       String?
+  schoolId      String?   // school-wide lesson (visible to all groups in this school)
   googleEventId String?   // Google Calendar event ID for sync
   createdAt     DateTime  @default(now())
 
   teacher       User          @relation(fields: [teacherId], references: [id], onDelete: Cascade)
   group         Group?        @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  school        School?       @relation(fields: [schoolId], references: [id], onDelete: Cascade)
   subGroups     LessonGroup[]
 }
 

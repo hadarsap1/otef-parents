@@ -126,6 +126,7 @@ export function TeacherLessons({
   const [endTime, setEndTime] = useState("13:30");
   const [schoolId, setSchoolId] = useState(schools[0]?.id ?? "");
   const [groupIds, setGroupIds] = useState<string[]>([]);
+  const [isSchoolWide, setIsSchoolWide] = useState(false);
   const [isEnrichment, setIsEnrichment] = useState(false);
   const [zoomLink, setZoomLink] = useState("");
   const [notes, setNotes] = useState("");
@@ -167,6 +168,7 @@ export function TeacherLessons({
     setEndTime("13:30");
     setSchoolId(schools[0]?.id ?? "");
     setGroupIds([]);
+    setIsSchoolWide(false);
     setIsEnrichment(false);
     setZoomLink("");
     setNotes("");
@@ -279,7 +281,8 @@ export function TeacherLessons({
         date,
         startTime,
         endTime,
-        groupIds: groupIds.length > 0 ? groupIds : undefined,
+        groupIds: isSchoolWide ? undefined : (groupIds.length > 0 ? groupIds : undefined),
+        schoolId: isSchoolWide ? schoolId : undefined,
         recurrence,
         isEnrichment,
         zoomLink: zoomLink.trim() || null,
@@ -427,11 +430,11 @@ export function TeacherLessons({
                 </div>
               )}
 
-              {/* Class selector — multi-select */}
+              {/* Class selector — multi-select + school-wide option */}
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
                   <Label>כיתות</Label>
-                  {filteredGroups.length > 1 && (
+                  {filteredGroups.length > 1 && !isSchoolWide && (
                     <button
                       type="button"
                       onClick={() => {
@@ -449,6 +452,26 @@ export function TeacherLessons({
                 </div>
                 {filteredGroups.length > 0 ? (
                   <div className="flex flex-wrap gap-1.5">
+                    {/* School-wide option */}
+                    {selectedSchool && (
+                      <button
+                        type="button"
+                        aria-pressed={isSchoolWide}
+                        onClick={() => {
+                          setIsSchoolWide(!isSchoolWide);
+                          if (!isSchoolWide) setGroupIds([]);
+                        }}
+                        className={cn(
+                          "text-sm px-3 py-1.5 rounded-xl border transition-colors min-h-[44px] flex items-center gap-1.5",
+                          isSchoolWide
+                            ? "bg-primary text-primary-foreground border-primary"
+                            : "border-border hover:border-primary/50"
+                        )}
+                      >
+                        {isSchoolWide && <Check className="h-3 w-3" />}
+                        כל {selectedSchool.name}
+                      </button>
+                    )}
                     {filteredGroups.map((g) => {
                       const selected = groupIds.includes(g.id);
                       return (
@@ -456,6 +479,7 @@ export function TeacherLessons({
                           key={g.id}
                           type="button"
                           aria-pressed={selected}
+                          disabled={isSchoolWide}
                           onClick={() => {
                             setGroupIds((prev) =>
                               selected
@@ -465,12 +489,14 @@ export function TeacherLessons({
                           }}
                           className={cn(
                             "text-sm px-3 py-1.5 rounded-xl border transition-colors min-h-[44px] flex items-center gap-1.5",
-                            selected
-                              ? "bg-primary text-primary-foreground border-primary"
-                              : "border-border hover:border-primary/50"
+                            isSchoolWide
+                              ? "opacity-40 cursor-not-allowed border-border"
+                              : selected
+                                ? "bg-primary text-primary-foreground border-primary"
+                                : "border-border hover:border-primary/50"
                           )}
                         >
-                          {selected && <Check className="h-3 w-3" />}
+                          {selected && !isSchoolWide && <Check className="h-3 w-3" />}
                           {g.name}
                         </button>
                       );

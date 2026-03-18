@@ -24,7 +24,9 @@ export default async function LessonsPage() {
     select: {
       id: true,
       name: true,
-      groupMemberships: { select: { groupId: true } },
+      groupMemberships: {
+        select: { groupId: true, group: { select: { schoolId: true } } },
+      },
     },
   });
 
@@ -32,6 +34,9 @@ export default async function LessonsPage() {
   const groupIds = [
     ...new Set(children.flatMap((c) => c.groupMemberships.map((m) => m.groupId))),
   ];
+  const schoolIds = [
+    ...new Set(children.flatMap((c) => c.groupMemberships.map((m) => m.group.schoolId)).filter(Boolean)),
+  ] as string[];
 
   // Israel current time for past/upcoming split
   const israelNow = new Date().toLocaleString("en-CA", { timeZone: "Asia/Jerusalem", hour12: false });
@@ -48,10 +53,15 @@ export default async function LessonsPage() {
     },
   } as const;
 
-  // Fetch all ONCE lessons + recurring, split by time in JS
+  // Fetch group lessons + school-wide lessons, split by time in JS
   const allLessons = await prisma.lesson.findMany({
-    where: { groupId: { in: groupIds } },
-    include: lessonInclude,
+    where: {
+      OR: [
+        { groupId: { in: groupIds } },
+        ...(schoolIds.length > 0 ? [{ schoolId: { in: schoolIds }, groupId: null }] : []),
+      ],
+    },
+    include: { ...lessonInclude, school: { select: { name: true } } },
     orderBy: [{ date: "asc" }, { startTime: "asc" }],
   });
 

@@ -93,18 +93,43 @@ export async function POST(req: NextRequest) {
       const tLesson = await prisma.lesson.findFirst({
         where: {
           id,
-          group: {
-            members: {
-              some: {
-                child: {
-                  OR: [
-                    { parentId: session.user.id },
-                    { childParents: { some: { userId: session.user.id } } },
-                  ],
+          OR: [
+            // Group lesson: child must be member
+            {
+              group: {
+                members: {
+                  some: {
+                    child: {
+                      OR: [
+                        { parentId: session.user.id },
+                        { childParents: { some: { userId: session.user.id } } },
+                      ],
+                    },
+                  },
                 },
               },
             },
-          },
+            // School-wide lesson: child must be in a group in that school
+            {
+              groupId: null,
+              school: {
+                groups: {
+                  some: {
+                    members: {
+                      some: {
+                        child: {
+                          OR: [
+                            { parentId: session.user.id },
+                            { childParents: { some: { userId: session.user.id } } },
+                          ],
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          ],
         },
         include: {
           teacher: { select: { name: true } },

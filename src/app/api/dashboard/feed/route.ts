@@ -36,28 +36,43 @@ export async function GET(req: NextRequest) {
 
   const childIds = children.map((c) => c.id);
 
-  // Get group IDs for the user's children
+  // Get group IDs and school IDs for the user's children
   const groupMemberships = await prisma.groupMember.findMany({
     where: { childId: { in: childIds } },
-    select: { groupId: true },
+    select: { groupId: true, group: { select: { schoolId: true } } },
   });
   const groupIds = [...new Set(groupMemberships.map((m) => m.groupId))];
+  const schoolIds = [...new Set(groupMemberships.map((m) => m.group.schoolId).filter(Boolean))] as string[];
 
-  // Fetch teacher-created lessons for today (one-time on this date + recurring)
+  // Fetch teacher-created lessons for today (one-time on this date + recurring) + school-wide
   const todayDow = dayStart.getDay(); // 0=Sun..6=Sat
-  const teacherLessons = groupIds.length > 0
+  const teacherLessons = (groupIds.length > 0 || schoolIds.length > 0)
     ? await prisma.lesson.findMany({
         where: {
-          groupId: { in: groupIds },
           OR: [
-            { recurrence: "ONCE", date: { gte: dayStart, lte: dayEnd } },
-            { recurrence: "DAILY" },
-            { recurrence: "WEEKLY" },
+            {
+              groupId: { in: groupIds },
+              OR: [
+                { recurrence: "ONCE", date: { gte: dayStart, lte: dayEnd } },
+                { recurrence: "DAILY" },
+                { recurrence: "WEEKLY" },
+              ],
+            },
+            ...(schoolIds.length > 0 ? [{
+              schoolId: { in: schoolIds },
+              groupId: null,
+              OR: [
+                { recurrence: "ONCE", date: { gte: dayStart, lte: dayEnd } },
+                { recurrence: "DAILY" },
+                { recurrence: "WEEKLY" },
+              ],
+            }] : []),
           ],
         },
         include: {
           teacher: { select: { name: true } },
           group: { select: { id: true, name: true } },
+          school: { select: { name: true } },
           subGroups: {
             include: {
               members: { include: { child: { select: { id: true, name: true } } } },
@@ -73,6 +88,8 @@ export async function GET(req: NextRequest) {
     .filter((lesson) => {
       // WEEKLY: only show on matching day of week
       if (lesson.recurrence === "WEEKLY" && lesson.date.getDay() !== todayDow) return false;
+      // School-wide lessons (no group) are always visible
+      if (!lesson.groupId && lesson.schoolId) return true;
       // Sub-group filter
       if (!lesson.hasSubGroups) return true;
       return lesson.subGroups.some((sg) =>
@@ -99,7 +116,7 @@ export async function GET(req: NextRequest) {
         type: "teacher-lesson" as const,
         id: lesson.id,
         title: lesson.title,
-        groupName: lesson.group?.name ?? "",
+        groupName: lesson.group?.name ?? (lesson.school?.name ? `כל ${lesson.school.name}` : ""),
         teacherName: lesson.teacher.name,
         startTime: displayStartTime,
         endTime: displayEndTime,

@@ -97,7 +97,7 @@ export async function POST(req: NextRequest) {
   const { error, session } = await requireRole("TEACHER", "SUPERADMIN");
   if (error) return error;
 
-  const { title, date, startTime, endTime, groupId, groupIds, zoomLink, notes, recurrence, subGroupMode, subGroups, isEnrichment } =
+  const { title, date, startTime, endTime, groupId, groupIds, schoolId, zoomLink, notes, recurrence, subGroupMode, subGroups, isEnrichment } =
     await req.json();
 
   const sanitizedTitle = sanitizeString(title, 200);
@@ -144,7 +144,10 @@ export async function POST(req: NextRequest) {
   const cappedSubGroups = Array.isArray(subGroups) ? subGroups.slice(0, 20) : subGroups;
   const hasSubGroupsFlag = Array.isArray(cappedSubGroups) && cappedSubGroups.length > 0;
 
-  // Create one lesson per group (or one without group if none selected)
+  // Resolve schoolId for school-wide lessons
+  const sanitizedSchoolId = sanitizeString(schoolId, 30);
+
+  // Create one lesson per group, or one school-wide lesson if none selected
   const targetGroups = resolvedGroupIds.length > 0 ? resolvedGroupIds : [null];
 
   try {
@@ -159,6 +162,7 @@ export async function POST(req: NextRequest) {
           recurrence: validRecurrence,
           teacherId: session.user.id,
           groupId: gid,
+          schoolId: gid ? null : sanitizedSchoolId,
           zoomLink: sanitizedZoomLink,
           notes: sanitizedNotes,
           isEnrichment: isEnrichment === true,
