@@ -40,8 +40,9 @@ export async function getGoogleAuth(userId: string) {
         },
       });
       oauth2.setCredentials(credentials);
-    } catch {
+    } catch (err) {
       // Refresh token revoked or expired — user needs to re-login
+      console.error("[google-calendar] Token refresh failed:", err instanceof Error ? err.message : err);
       return null;
     }
   }

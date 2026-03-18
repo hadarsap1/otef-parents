@@ -179,7 +179,8 @@ export async function POST(req: NextRequest) {
   let googleEventId: string | null;
   try {
     googleEventId = await addToGoogleCalendar(session.user.id, calendarEvent);
-  } catch {
+  } catch (err) {
+    console.error("[calendar/sync] addToGoogleCalendar threw:", err instanceof Error ? err.message : err);
     return NextResponse.json(
       { error: "Failed to add to Google Calendar" },
       { status: 500 }
@@ -187,6 +188,7 @@ export async function POST(req: NextRequest) {
   }
 
   if (!googleEventId) {
+    console.error("[calendar/sync] addToGoogleCalendar returned null for user:", session.user.id);
     return NextResponse.json(
       { error: "Failed to add to Google Calendar. Please re-login to grant calendar permission." },
       { status: 500 }
