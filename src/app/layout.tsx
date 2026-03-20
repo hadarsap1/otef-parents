@@ -12,6 +12,9 @@ const rubik = Rubik({
 export const metadata: Metadata = {
   title: "לו״ז הארי - לוח זמנים למשפחה",
   description: "ניהול שיעורים, מפגשים ואירועים למשפחה",
+  verification: {
+    google: "W7cDtThoNAzhe2G-dtBWy-UNIgBRc81Uv_SvVxBySD8",
+  },
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
