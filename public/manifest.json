@@ -1,6 +1,6 @@
 {
-  "name": "לו״ז הארי",
-  "short_name": "לו״ז הארי",
+  "name": "Clearday",
+  "short_name": "Clearday",
   "description": "ניהול שיעורים, מפגשים ואירועים למשפחה",
   "start_url": "/dashboard",
   "display": "standalone",

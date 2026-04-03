@@ -33,9 +33,9 @@ export function DashboardNav({ user }: DashboardNavProps) {
       <div className="max-w-lg mx-auto flex items-center justify-between px-4 h-14">
         <div className="flex items-center gap-2">
           <div className="h-7 w-7 rounded-lg bg-primary flex items-center justify-center">
-            <span className="text-primary-foreground text-xs font-bold">ל</span>
+            <span className="text-primary-foreground text-xs font-bold">C</span>
           </div>
-          <h2 className="font-semibold text-base tracking-tight">לו״ז הארי</h2>
+          <h2 className="font-semibold text-base tracking-tight">Clearday</h2>
         </div>
 
         <div className="flex items-center gap-2">

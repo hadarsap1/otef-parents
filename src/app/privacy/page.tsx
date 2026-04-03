@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "מדיניות פרטיות - לו״ז הארי",
+  title: "מדיניות פרטיות - Clearday",
 };
 
 export default function PrivacyPage() {
@@ -25,7 +25,7 @@ export default function PrivacyPage() {
         <section className="space-y-3">
           <h2 className="text-xl font-semibold">מהי האפליקציה</h2>
           <p className="text-muted-foreground leading-relaxed">
-            &quot;לו״ז הארי&quot; היא אפליקציה לניהול לוח זמנים משפחתי - שיעורים,
+            &quot;Clearday&quot; היא אפליקציה לניהול לוח זמנים משפחתי - שיעורים,
             מפגשים, פליידייטים ואירועים אישיים. האפליקציה מיועדת להורים בקהילת
             עוטף עזה.
           </p>
@@ -150,7 +150,7 @@ export default function PrivacyPage() {
         </section>
 
         <div className="border-t pt-6 text-center text-xs text-muted-foreground">
-          &copy; {new Date().getFullYear()} לו״ז הארי
+          &copy; {new Date().getFullYear()} Clearday
         </div>
       </div>
     </div>

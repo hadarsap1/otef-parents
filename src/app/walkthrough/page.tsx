@@ -104,7 +104,7 @@ const parentSlides: Slide[] = [
     visual: (
       <PhoneMock>
         <div className="text-center space-y-2 py-2">
-          <div className="text-base font-bold text-foreground">לו״ז הארי</div>
+          <div className="text-base font-bold text-foreground">Clearday</div>
           <div className="text-[10px] text-muted-foreground">לוח זמנים למשפחה</div>
           <div className="mx-auto mt-2 flex items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-[10px] font-medium text-white">
             <svg className="h-3 w-3" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="currentColor"/></svg>
@@ -538,7 +538,7 @@ export default function WalkthroughPage() {
       <div className="min-h-screen bg-background flex items-center justify-center px-4">
         <div className="w-full max-w-sm space-y-6 text-center">
           <div>
-            <h1 className="text-3xl font-bold">לו״ז הארי</h1>
+            <h1 className="text-3xl font-bold">Clearday</h1>
             <p className="text-muted-foreground mt-1">סיור מודרך באפליקציה</p>
           </div>
 

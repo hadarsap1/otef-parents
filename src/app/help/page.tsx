@@ -3,7 +3,7 @@ import Link from "next/link";
 import { HelpContent } from "@/components/help-content";
 
 export const metadata: Metadata = {
-  title: "מדריך שימוש - לו״ז הארי",
+  title: "מדריך שימוש - Clearday",
 };
 
 export default function PublicHelpPage() {
@@ -19,7 +19,7 @@ export default function PublicHelpPage() {
           </Link>
           <h1 className="mt-4 text-3xl font-bold">מדריך שימוש</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            לו״ז הארי - לוח זמנים למשפחה
+            Clearday - לוח זמנים למשפחה
           </p>
         </div>
 

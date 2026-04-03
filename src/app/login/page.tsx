@@ -17,7 +17,7 @@ function LoginContent() {
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <Card className="w-full max-w-sm">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">לו״ז הארי</CardTitle>
+          <CardTitle className="text-2xl font-bold">Clearday</CardTitle>
           <p className="text-muted-foreground text-sm mt-1">
             לוח זמנים למשפחה
           </p>
@@ -84,7 +84,7 @@ function LoginContent() {
           </a>
           <p className="text-center text-xs text-muted-foreground">
             <a href="/help" className="underline hover:text-foreground">
-              מה זה לו״ז הארי?
+              מה זה Clearday?
             </a>
             {" · "}
             <a href="/privacy" className="underline hover:text-foreground">

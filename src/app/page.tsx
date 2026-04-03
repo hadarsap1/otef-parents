@@ -22,9 +22,9 @@ export default async function Home() {
       {/* Hero */}
       <div className="px-4 pt-16 pb-12 text-center">
         <div className="mx-auto mb-4 h-14 w-14 rounded-2xl bg-primary flex items-center justify-center">
-          <span className="text-primary-foreground text-2xl font-bold">ל</span>
+          <span className="text-primary-foreground text-2xl font-bold">C</span>
         </div>
-        <h1 className="text-3xl font-bold tracking-tight">לו״ז הארי</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Clearday</h1>
         <p className="mt-2 text-muted-foreground text-lg">
           לוח זמנים למשפחה
         </p>
@@ -79,7 +79,7 @@ export default async function Home() {
 
       {/* Footer */}
       <footer className="border-t py-6 text-center text-xs text-muted-foreground space-y-2">
-        <p>לו״ז הארי - לוח זמנים למשפחה</p>
+        <p>Clearday - לוח זמנים למשפחה</p>
         <p>
           <Link href="/help" className="underline hover:text-foreground">
             מדריך שימוש
