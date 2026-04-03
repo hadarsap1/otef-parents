@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -244,13 +244,9 @@ function LessonRow({
   return (
     <div
       className={cn(
-        "relative flex gap-3 py-3 cursor-pointer active:bg-muted/50 transition-colors rounded-lg -mx-1 px-1",
+        "relative flex gap-3 py-3",
         !isLast && "border-b border-dashed"
       )}
-      onClick={() => setEditing(true)}
-      role="button"
-      tabIndex={0}
-      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setEditing(true); }}
     >
       {/* Time column */}
       <div className="flex flex-col items-center shrink-0 w-14 text-xs">
@@ -372,12 +368,19 @@ function LessonRow({
 
 /** Render text with clickable links */
 function FeedTextWithLinks({ text }: { text: string }) {
-  const urlRegex = /(https?:\/\/[^\s,]+)/g;
-  const parts = text.split(urlRegex);
+  const parts = text.split(/(https?:\/\/[^\s,]+)/g);
   return (
     <>
-      {parts.map((part, i) =>
-        urlRegex.test(part) ? (
+      {parts.map((part, i) => {
+        if (!part.startsWith("http://") && !part.startsWith("https://"))
+          return <span key={i}>{part}</span>;
+        let label = part;
+        try {
+          label = new URL(part).hostname.replace(/^www\./, "");
+        } catch {
+          // malformed URL — fall back to raw text
+        }
+        return (
           <a
             key={i}
             href={part}
@@ -386,12 +389,10 @@ function FeedTextWithLinks({ text }: { text: string }) {
             onClick={(e) => e.stopPropagation()}
             className="text-primary hover:underline break-all inline-flex items-center gap-0.5"
           >
-            קישור
+            {label}
           </a>
-        ) : (
-          <span key={i}>{part}</span>
-        )
-      )}
+        );
+      })}
     </>
   );
 }
@@ -553,7 +554,9 @@ export function DailyFeed({ date }: { date?: string }) {
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
   })();
 
-  useEffect(() => {
+  const loadFeed = useCallback(() => {
+    setLoading(true);
+    setError(false);
     fetch(`/api/dashboard/feed?date=${dateStr}`)
       .then((r) => r.json())
       .then((d) => {
@@ -563,6 +566,10 @@ export function DailyFeed({ date }: { date?: string }) {
       .catch(() => setError(true))
       .finally(() => setLoading(false));
   }, [dateStr]);
+
+  useEffect(() => {
+    loadFeed();
+  }, [loadFeed]);
 
   // Auto-refresh every 30 seconds
   useEffect(() => {
@@ -638,7 +645,7 @@ export function DailyFeed({ date }: { date?: string }) {
         <CardContent className="py-6 text-center text-muted-foreground">
           <p className="text-sm">שגיאה בטעינת הנתונים.</p>
           <button
-            onClick={() => { setLoading(true); setError(false); }}
+            onClick={loadFeed}
             className="text-sm text-primary mt-2 hover:underline"
           >
             נסה שוב

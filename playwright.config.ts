@@ -5,7 +5,7 @@ export default defineConfig({
   timeout: 15000,
   retries: 0,
   use: {
-    baseURL: "http://localhost:3002",
+    baseURL: process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3002",
     locale: "he-IL",
     timezoneId: "Asia/Jerusalem",
   },
