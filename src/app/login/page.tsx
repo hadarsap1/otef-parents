@@ -2,14 +2,16 @@
 
 import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
+import { useState, Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Suspense } from "react";
+import { Loader2 } from "lucide-react";
 
 function LoginContent() {
   const searchParams = useSearchParams();
   const error = searchParams.get("error");
   const callbackUrl = searchParams.get("callbackUrl");
+  const [isLoading, setIsLoading] = useState(false);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
@@ -22,7 +24,7 @@ function LoginContent() {
         </CardHeader>
         <CardContent className="space-y-3">
           {error && (
-            <div className="rounded-md bg-red-50 border border-red-200 p-3 text-sm text-red-700">
+            <div role="alert" className="rounded-md bg-red-50 border border-red-200 p-3 text-sm text-red-700">
               <p className="font-medium">שגיאת התחברות</p>
               <p className="mt-1 text-xs">
                 {error === "OAuthAccountNotLinked"
@@ -34,10 +36,17 @@ function LoginContent() {
             </div>
           )}
           <Button
-            onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
+            onClick={() => {
+              setIsLoading(true);
+              signIn("google", { callbackUrl: callbackUrl ?? "/dashboard" });
+            }}
+            disabled={isLoading}
             className="w-full"
             size="lg"
           >
+            {isLoading ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
             <svg className="h-5 w-5" viewBox="0 0 24 24">
               <path
                 d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
@@ -56,7 +65,8 @@ function LoginContent() {
                 fill="#EA4335"
               />
             </svg>
-            התחברות עם Google
+            )}
+            {isLoading ? "מתחבר..." : "התחברות עם Google"}
           </Button>
           <p className="text-center text-xs text-muted-foreground leading-relaxed">
             בהתחברות תתבקשו לאשר גישה ליומן Google - האפליקציה{" "}
