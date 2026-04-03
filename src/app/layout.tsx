@@ -10,7 +10,7 @@ const rubik = Rubik({
 });
 
 export const metadata: Metadata = {
-  title: "לו״ז הארי - לוח זמנים למשפחה",
+  title: "Clearday - לוח זמנים למשפחה",
   description: "ניהול שיעורים, מפגשים ואירועים למשפחה",
   verification: {
     google: "W7cDtThoNAzhe2G-dtBWy-UNIgBRc81Uv_SvVxBySD8",
@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "לו״ז הארי",
+    title: "Clearday",
   },
 };
 

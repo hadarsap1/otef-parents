@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "תנאי שימוש - לו״ז הארי",
+  title: "תנאי שימוש - Clearday",
 };
 
 export default function TermsPage() {
@@ -25,7 +25,7 @@ export default function TermsPage() {
         <section className="space-y-3">
           <h2 className="text-xl font-semibold">הסכמה לתנאים</h2>
           <p className="text-muted-foreground leading-relaxed">
-            בעצם השימוש באפליקציית &quot;לו״ז הארי&quot; (להלן:
+            בעצם השימוש באפליקציית &quot;Clearday&quot; (להלן:
             &quot;האפליקציה&quot;), אתם מסכימים לתנאי שימוש אלה. אם אינכם
             מסכימים לתנאים, אנא הימנעו משימוש באפליקציה.
           </p>
@@ -34,7 +34,7 @@ export default function TermsPage() {
         <section className="space-y-3">
           <h2 className="text-xl font-semibold">תיאור השירות</h2>
           <p className="text-muted-foreground leading-relaxed">
-            &quot;לו״ז הארי&quot; היא אפליקציה לניהול לוח זמנים משפחתי - שיעורים,
+            &quot;Clearday&quot; היא אפליקציה לניהול לוח זמנים משפחתי - שיעורים,
             מפגשים, פליידייטים ואירועים אישיים. האפליקציה מאפשרת סנכרון אירועים
             ליומן Google ושיתוף לוח זמנים בין הורים ומורים.
           </p>
@@ -112,7 +112,7 @@ export default function TermsPage() {
         </section>
 
         <div className="border-t pt-6 text-center text-xs text-muted-foreground">
-          &copy; {new Date().getFullYear()} לו״ז הארי
+          &copy; {new Date().getFullYear()} Clearday
         </div>
       </div>
     </div>
